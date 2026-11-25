@@ -1,29 +1,27 @@
-# Supplementary Figure 4 | T cell landscape and enrichment analysis in the independent clinical validation cohort.
+# Supplementary Figure 4 | T cell landscape and enrichment analysis in the independent clinical validation cohort (GSE223844)
 
-The GSE223844 cohort provides an independent view of treatment response, T cell composition and FGFBP2 expression.
+> [Back to Repository Overview (EN)](../../README.md) · [返回仓库首页 (中文)](../../README.zh-CN.md)
 
-![S04](Combined/S04.png)
+![Fig. S4](Combined/S04.png)
 
-[PDF](Combined/S04.pdf) · [Original EMF](Combined/S04.emf)
+[Download PDF](Combined/S04.pdf) · [Original EMF](Combined/S04.emf) · [GSE223844 Shared Inputs](../../00_Global_Data/Shared_Inputs/GSE223844/README.md)
 
-(A) UMAP projection of T cells derived from the independent cohort of relapsed AML patients (n = 8) before and after salvage immunotherapy, revealing 12 transcriptionally distinct clusters.
+## Key Findings
 
-(B) Canonical marker expression across identified T cell clusters. 
+Reanalysis of bone marrow T cells from eight relapsed post-allo-HSCT AML patients treated with decitabine plus ipilimumab (`GSE223844`; 3 `CR`, 5 `NR`) resolves 12 transcriptionally distinct T cell clusters (`Fig. S4A–C`). Patients achieving complete remission exhibit marked post-treatment enrichment of `CD8+ Teff` cells and expansion of the `FGFBP2`-high `Teff-1` subcluster, whereas non-responders show enrichment of exhausted T cells (`Fig. S4D–G`).
 
-(C) Comparative UMAP projections by clinical response. T cell landscapes split by therapeutic outcome (Complete Remission, CR; Non-Response, NR) and treatment stage (Pre-treatment vs. Post-treatment), showing global shifts in cell-state distribution.
+## Panel Descriptions
 
-(D) Stacked bar plot depicting the proportional composition of T cell clusters in CR-Pre, CR-Post, NR-Pre, and NR-Post groups, highlighting the dynamic expansion of specific subsets in responders.
+- **(A–B)** Integrated T cell UMAP (`A`) and canonical marker expression (`B`) across 12 clusters in `GSE223844`.
+- **(C–D)** Comparative UMAP embeddings (`C`) and stacked cluster proportions (`D`) across `CR-Pre`, `CR-Post`, `NR-Pre`, and `NR-Post`.
+- **(E)** Treatment-induced cluster enrichment (`log2 OR`, Fisher's exact test with Bonferroni correction) in `CR` and `NR` patients.
+- **(F–G)** Proportional composition of `CD8+ Teff` subclusters (`F`) and `FGFBP2` expression comparison between `CR` and `NR` (`G`).
 
-(E) Differential enrichment of T cell subsets relative to clinical response. Bar plots illustrate the log2 (Odds Ratio), quantifying the treatment-induced enrichment or depletion of specific T cell clusters in CR (left, pink) and NR (right, purple) patients. In this analysis, positive values (log2OR > 0) denote enrichment in pre-treatment samples, while negative values (log2OR < 0) denote enrichment in post-treatment samples. Statistical significance was determined by Fisher exact test followed by Bonferroni correction for multiple testing (*** P < 0.0001; ** P < 0.001; ** P < 0.01; n.s., not significant).
-
-(F) Proportional composition of CD8⁺ Teff subclusters.
-
-(G) Violin plots comparing FGFBP2 expression in CD8+ Teff cells between CR and NR groups. Expression levels are significantly elevated in CR patients and further increased after remission. Panels A-H were generated from the external validation cohort (GEO: GSE223844).
-
-## Panel code and data
+## Panel Directory
 
 [A](a_S04a/README.md) · [B](b_S04b/README.md) · [C](c_S04c/README.md) · [D](d_S04d/README.md) · [E](e_S04e/README.md) · [F](f_S04f/README.md) · [G](g_S04g/README.md)
 
-## Figure source and execution
+## Code & Inputs
 
-Combined contains the exact EMF embedded in the supplied manuscript and raster PNG/PDF previews. Server panel exports are retained where located. Panel pages identify shared inputs and original scripts. Historical interactive scripts require the documented session objects; source fragments ending in `.source.txt` are not standalone programs.
+- **Archived scripts**: `Main_Figure_04/00_Preprocess/GSE223844/` (`01_cohort_analysis.Rmd`, `02_Tcell_analysis.Rmd`, `03_Tcell_additional_analysis.R`).
+- **External cohort objects**: `/data5/tiany/RRAML/HSCTRR/T/Tcell.rds` and `Teff.rds` (public GEO accession [GSE223844](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE223844)).

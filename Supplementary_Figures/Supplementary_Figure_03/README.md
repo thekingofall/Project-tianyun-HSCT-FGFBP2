@@ -1,23 +1,26 @@
-# Supplementary Figure 3 | Compositional analysis of T cell developmental states and external validation of transcriptomic signatures.
+# Supplementary Figure 3 | Compositional analysis of T cell developmental states and external validation of transcriptomic signatures
 
-State-specific composition and NeoTCR scores further characterize the inferred T cell states.
+> [Back to Repository Overview (EN)](../../README.md) · [返回仓库首页 (中文)](../../README.zh-CN.md)
 
-![S03](Combined/S03.png)
+![Fig. S3](Combined/S03.png)
 
-[PDF](Combined/S03.pdf) · [Original EMF](Combined/S03.emf)
+[Download PDF](Combined/S03.pdf) · [Original EMF](Combined/S03.emf) · [Primary Shared Inputs](../../00_Global_Data/Shared_Inputs/Primary/README.md)
 
-(A-B) Distribution of CD8+ T cell subsets across inferred states. Stacked bar plots illustrating the relative contribution of samples from HD, Pre-HSCT, and Post-HSCT stages to the specific CD8+ T cell subsets within State 1 (A) and State 3 (B).
+## Key Findings
 
-(C-D) Distribution of CD4+ T cell subsets across inferred states. Stacked bar plots depicting the sample source composition (HD, Pre-HSCT, and Post-HSCT) for CD4+ T cell clusters within State 1 (C) and State 3 (D).
+Stage-origin breakdowns confirm that root `State 1` in both `CD8+` and `CD4+` trajectories derives predominantly from `HD` samples, whereas terminal `State 3` is enriched in post-transplant (and for `CD4+`, `Pre-HSCT`) cells (`Fig. S3A–D`). External tumor-reactive `NeoTCR` signature scoring further highlights enhanced antigen-responsive effector potential within post-transplant effector compartments (`Fig. S3E–F`).
 
-(E-F) External validation of anti-tumor reactivity profiles. Violin plots display the NeoTCR scores—quantified using a validated transcriptomic gene set characteristic of neoantigen-selected tumor-specific T cells (Frank et al., 2022)—across specific CD8⁺ (E) and CD4⁺ (F) T cell state-specific subsets encompassing states S1, S2, and S3 (e.g., Teff_S2, Tex_S3). The distinct enrichment of this signature highlights the antigen-responsive and anti-leukemic effector potential of the reconstituted T cell compartment.
+## Panel Descriptions
 
-## Panel code and data
+- **(A–B)** Stage contributions (`HD`, `Pre-HSCT`, `Post-HSCT`) to `CD8+` T cell subsets within `State 1` (`A`) and `State 3` (`B`).
+- **(C–D)** Stage contributions to `CD4+` T cell subsets within `State 1` (`C`) and `State 3` (`D`).
+- **(E–F)** Violin plots of external `NeoTCR` signature scores (Lowery et al., *Science* 2022) across `CD8+` (`E`) and `CD4+` (`F`) state-specific subsets.
+
+## Panel Directory
 
 [A](a_S03a/README.md) · [B](b_S03b/README.md) · [C](c_S03c/README.md) · [D](d_S03d/README.md) · [E](e_S03e/README.md) · [F](f_S03f/README.md)
 
-## Figure source and execution
+## Code, Inputs & Known Source Boundary
 
-Combined contains the exact EMF embedded in the supplied manuscript and raster PNG/PDF previews. Server panel exports are retained where located. Panel pages identify shared inputs and original scripts. Historical interactive scripts require the documented session objects; source fragments ending in `.source.txt` are not standalone programs.
-
-Saved cell-level inputs and trajectory geometry are in [Primary shared inputs](../../00_Global_Data/Shared_Inputs/Primary/README.md).
+- **Saved-table verification (`S03a–d`)**: `python 00_Settings/run_saved_plot.py M03 --output /path/to/output_M03`.
+- **Known source boundary (`S03e–f`)**: The exact `NeoTCR` scoring script and saved score column were not present in the archived `Tcell.rds` metadata or scripts on server 252; the submitted manuscript panels are retained verbatim in `Combined/S03.emf`.

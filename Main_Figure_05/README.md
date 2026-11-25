@@ -1,29 +1,29 @@
-# Fig. 5 | Clonal architecture and T cell receptor convergence across CD8 effector states.
+# Fig. 5 | Clonal architecture and T cell receptor convergence across CD8 effector states
 
-Clonal overlap, receptor usage and CDR3 motifs characterize continuity and differences between CD8 effector and exhausted states.
+> [Back to Repository Overview (EN)](../README.md) · [返回仓库首页 (中文)](../README.zh-CN.md)
 
-![M05](Combined/M05.png)
+![Fig. 5](Combined/M05.png)
 
-[PDF](Combined/M05.pdf) · [Original EMF](Combined/M05.emf)
+[Download PDF](Combined/M05.pdf) · [Original EMF](Combined/M05.emf) · [Primary Shared Inputs](../00_Global_Data/Shared_Inputs/Primary/README.md)
 
-(A) Pairwise overlap heatmap of T cell receptor repertoires among HD, Pre-HSCT, and longitudinal Post-HSCT samples, showing increased repertoire similarity in the late post-transplant phase.
+## Key Findings
 
-(B) Rank plot illustrating the distribution of counts for unique T cell TCR β CDR3 sequences. Clonotypes are categorized into four quartiles based on their degree of clonal expansion (ranging from 3-20 to 3,762-4,427 counts).
+Longitudinal scTCR-seq comparison demonstrates extensive post-transplant clonal turnover: post-HSCT repertoires share substantially higher similarity with healthy donor (`HD`) repertoires than with recipients' `Pre-HSCT` baselines, reflecting reconstitution from donor-derived mature clones (`Fig. 5A`). Highly expanded TCRβ clonotypes (`N ≥ 3`) concentrate preferentially within `Teff` and `Tem` compartments (`Fig. 5B–C`). Across `CD8+` effector differentiation states, **`S2_CD8_Teff` retains broader V(D)J diversity**, whereas **`S3_CD8_Teff`** shows marked oligoclonal dominance (`TRAV12-2`, `TRBV6-2`, `TRAJ4`) (`Fig. 5D–F`). Alluvial connectivity and CDR3β sequence motif analyses reveal strong clonal continuity and central CDR3 homology (positions 7–11) between `S3_CD8_Teff` and terminally exhausted `CD8_Tex`, whereas dominant `S2_CD8_Teff` clones show limited transition into `CD8_Tex`, reinforcing the comparatively low-exhaustion profile of `S2_CD8_Teff` (`Fig. 5G–H`).
 
-(C) Density projections onto the T cell UMAP landscape (as defined in Fig. 2A) showing the distribution of clonally expanded T cells according to their TCRβ CDR3 quartiles. Highly expanded clonotypes (upper quartiles) preferentially localize within the effector (Teff) and exhausted (Tex) clusters.
+## Panel Descriptions
 
-(D-F) Donut plots summarizing the proportional usage of TRAV-TRBV and TRAJ-TRBJ gene segments in S2_CD8_Teff (D), S3_CD8_Teff (E), and S3_CD8_Tex (F) populations. 
+- **(A)** Pairwise TCRβ CDR3 repertoire overlap heatmap across `HD`, `Pre-HSCT`, and longitudinal post-HSCT time points.
+- **(B)** Rank-abundance distribution of unique TCRβ CDR3 clonotypes stratified into four expansion quartiles.
+- **(C)** Density projection of the four TCRβ clonal expansion quartiles onto the T cell UMAP embedding.
+- **(D–F)** Donut charts of `TRAV`/`TRBV` and `TRAJ`/`TRBJ` gene segment usage in `S2_CD8_Teff` (`D`), `S3_CD8_Teff` (`E`), and `S3_CD8_Tex` (`F`).
+- **(G)** Alluvial plots illustrating dominant `TRBV–TRBJ` sharing between `S2_CD8_Teff` and `CD8_Tex` (left) versus `S3_CD8_Teff` and `CD8_Tex` (right).
+- **(H)** Enriched TCRβ CDR3 amino acid sequence logos across `S2_CD8_Teff`, `S3_CD8_Teff`, and `CD8_Tex`.
 
-(G) Alluvial plots illustrating the sharing of dominant TRBV-TRBJ recombinations between S2_CD8_Teff and CD8_Tex (left), and between S3_CD8_Teff and CD8_Tex (right), suggesting shared clonal origins across different differentiation states.
-
-(H) Amino acid sequence logos identifying enriched CDR3 motifs for S2_CD8_Teff, S3_CD8_Teff, and CD8_Tex.
-
-## Panel code and data
+## Panel Directory
 
 [A](a_M05a/README.md) · [B](b_M05b/README.md) · [C](c_M05c/README.md) · [D](d_M05d/README.md) · [E](e_M05e/README.md) · [F](f_M05f/README.md) · [G](g_M05g/README.md) · [H](h_M05h/README.md)
 
-## Figure source and execution
+## Code, Inputs & Reproduction
 
-Combined contains the exact EMF embedded in the supplied manuscript and raster PNG/PDF previews. Server panel exports are retained where located. Panel pages identify shared inputs and original scripts. Historical interactive scripts require the documented session objects; source fragments ending in `.source.txt` are not standalone programs.
-
-Saved cell-level inputs and trajectory geometry are in [Primary shared inputs](../00_Global_Data/Shared_Inputs/Primary/README.md).
+- **Original archived scripts**: [02_TCR_gene_usage.R](01_Code/02_TCR_gene_usage.R), [03_state_specific_VJ_connectivity.R](01_Code/03_state_specific_VJ_connectivity.R), [01_STARTRAC_analysis.R](../Main_Figure_03/01_Code/01_STARTRAC_analysis.R), and archived CDR3 motif notes ([01_CDR3_motifs.source.txt](01_Code/01_CDR3_motifs.source.txt)).
+- **Shared inputs**: Paired `CTgene`/`CTaa`/`Frequency`/`Celltype2` fields are exported in `00_Global_Data/Shared_Inputs/Primary/Tcell_metadata.csv.gz`; full V(D)J contigs remain in `/data5/tiany/HSCT/Result/final_vdj.rda` on server 252.

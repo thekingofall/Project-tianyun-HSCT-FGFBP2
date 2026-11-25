@@ -1,21 +1,25 @@
-# Supplementary Figure 1 | Overview of sample distribution and immune lineage composition following HSCT.
+# Supplementary Figure 1 | Overview of sample distribution and immune lineage composition following HSCT
 
-Sample contributions and lineage proportions provide the compositional context for the longitudinal atlas.
+> [Back to Repository Overview (EN)](../../README.md) · [返回仓库首页 (中文)](../../README.zh-CN.md)
 
-![S01](Combined/S01.png)
+![Fig. S1](Combined/S01.png)
 
-[PDF](Combined/S01.pdf) · [Original EMF](Combined/S01.emf)
+[Download PDF](Combined/S01.pdf) · [Original EMF](Combined/S01.emf) · [Primary Shared Inputs](../../00_Global_Data/Shared_Inputs/Primary/README.md)
 
-(A) Stacked bar plots represent the proportions of total sequenced cells derived from PBMCs (left) and T cells (right) across five designated time points: HD, Pre-HSCT, Post-1M, Post-3M, and Post-6M.
+## Key Findings
 
-(B) Proportional composition of distinct immune lineages across stages. Stacked bar plot depicting the dynamic distribution of major hematopoietic lineages—including HSC/MPPs, lymphoid cells (T, NK, B), myeloid subsets (monocytes, granulocytes, cDCs, pDCs), and platelets—during immune reconstitution. 
+Sample-level cell counts confirm balanced longitudinal representation across `HD`, `Pre-HSCT`, `Post-1M`, `Post-3M`, and `Post-6M` (`Fig. S1A`), while lineage-level stacked proportions highlight transient post-transplant myeloid expansion and T cell contraction at `Post-1M` followed by progressive lymphoid recovery (`Fig. S1B`).
 
-## Panel code and data
+## Panel Descriptions
 
-[A](a_S01a/README.md) · [B](b_S01b/README.md)
+- **(A)** Stacked bar plots of sequenced cell contributions across five sampling time points for total PBMCs (left) and T cells (right).
+- **(B)** Relative proportions of major hematopoietic and immune lineages across longitudinal stages.
 
-## Figure source and execution
+## Panel Directory
 
-Combined contains the exact EMF embedded in the supplied manuscript and raster PNG/PDF previews. Server panel exports are retained where located. Panel pages identify shared inputs and original scripts. Historical interactive scripts require the documented session objects; source fragments ending in `.source.txt` are not standalone programs.
+[A (`a_S01a`)](a_S01a/README.md) · [B (`b_S01b`)](b_S01b/README.md)
 
-Saved cell-level inputs and trajectory geometry are in [Primary shared inputs](../../00_Global_Data/Shared_Inputs/Primary/README.md).
+## Code & Inputs
+
+- **Saved-table inputs**: `00_Global_Data/Shared_Inputs/Primary/PBMC_sample_celltype_counts.csv` and `Tcell_sample_condition_counts.csv`.
+- **Archived scripts**: [01_primary_scRNA_TCR_analysis.Rmd](../../Main_Figure_01/00_Preprocess/01_primary_scRNA_TCR_analysis.Rmd), [01_primary_landscape_and_TCR.R](../../Main_Figure_01/01_Code/01_primary_landscape_and_TCR.R).

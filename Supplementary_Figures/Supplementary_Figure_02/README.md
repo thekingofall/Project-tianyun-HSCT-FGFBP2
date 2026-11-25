@@ -1,25 +1,27 @@
-# Supplementary Figure 2 | Dynamic changes in T cell composition and spatial distribution post-allo-HSCT.
+# Supplementary Figure 2 | Dynamic changes in T cell composition and spatial distribution post-allo-HSCT
 
-The CD4/CD8 balance, subset composition and functional scores show persistent changes during reconstitution.
+> [Back to Repository Overview (EN)](../../README.md) · [返回仓库首页 (中文)](../../README.zh-CN.md)
 
-![S02](Combined/S02.png)
+![Fig. S2](Combined/S02.png)
 
-[PDF](Combined/S02.pdf) · [Original EMF](Combined/S02.emf)
+[Download PDF](Combined/S02.pdf) · [Original EMF](Combined/S02.emf) · [Primary Shared Inputs](../../00_Global_Data/Shared_Inputs/Primary/README.md)
 
-(A) Proportions of major T cell compartments (top) and corresponding CD4⁺/CD8⁺ T cell ratios (bottom) across clinical time points. The grouped bar plot illustrates the relative abundance (%) of CD4⁺ T cells, CD8⁺ T cells, and other T cell populations, while the line plot details the progressive longitudinal shift in the CD4⁺/CD8⁺ ratio across the Pre-HSCT, HD, Post-1M, Post-3M, and Post-6M intervals.
+## Key Findings
 
-(B) Stacked area plots showing the composition of CD4⁺ and CD8⁺ T cell subsets across time points. The relative proportions of functionally distinct subsets are displayed, highlighting the remodelling of T cell subset composition during immune reconstitution.
+Post-allo-HSCT reconstitution displays faster `CD8+` than `CD4+` recovery, producing a persistent inversion of the `CD4+/CD8+` ratio (`Fig. S2A`). Stage-stratified subset proportions and UMAP density projections document sustained depletion of naive compartments alongside expansion of effector and exhausted populations (`Fig. S2B–C`), accompanied by elevated TCR signaling and proliferation scores peaking at `Post-1M` (`Fig. S2D`).
 
-(C) UMAP projections of T cells across time points with corresponding density maps. The upper panels show UMAP embeddings for each time point, illustrating the global distribution of T cells in transcriptional space, while the lower panels display density maps indicating regions of cellular enrichment and their dynamic redistribution over time.
+## Panel Descriptions
 
-(D) Violin plots showing CD4⁺ and CD8⁺ T cell TCR signaling and proliferation scores across time points (Pre, HD, Post-1M, Post-3M, and Post-6M), highlighting dynamic functional activation during immune reconstitution. 
+- **(A)** Major T cell compartment proportions (`CD4+`, `CD8+`, other T cells; top) and longitudinal `CD4+/CD8+` ratio (bottom).
+- **(B)** Stacked area plots of `CD4+` and `CD8+` T cell subset compositions across time points.
+- **(C)** Stage-stratified T cell UMAP embeddings and corresponding density maps.
+- **(D)** Violin plots of `CD4+` and `CD8+` TCR signaling and proliferation module scores across stages.
 
-## Panel code and data
+## Panel Directory
 
-[A](a_S02a/README.md) · [B](b_S02b/README.md) · [C](c_S02c/README.md) · [D](d_S02d/README.md)
+[A (`a_S02a`)](a_S02a/README.md) · [B (`b_S02b`)](b_S02b/README.md) · [C (`c_S02c`)](c_S02c/README.md) · [D (`d_S02d`)](d_S02d/README.md)
 
-## Figure source and execution
+## Code & Reproduction
 
-Combined contains the exact EMF embedded in the supplied manuscript and raster PNG/PDF previews. Server panel exports are retained where located. Panel pages identify shared inputs and original scripts. Historical interactive scripts require the documented session objects; source fragments ending in `.source.txt` are not standalone programs.
-
-Saved cell-level inputs and trajectory geometry are in [Primary shared inputs](../../00_Global_Data/Shared_Inputs/Primary/README.md).
+- **Saved-table verification**: `python 00_Settings/run_saved_plot.py M02 --output /path/to/output_M02` (outputs functional score violins covering `M02d` and `S02d` from `Tcell_metadata.csv.gz`).
+- **Archived scripts**: [01_primary_landscape_and_TCR.R](../../Main_Figure_01/01_Code/01_primary_landscape_and_TCR.R) and [01_gene_set_scores.source.txt](../../Main_Figure_02/01_Code/01_gene_set_scores.source.txt).

@@ -1,31 +1,34 @@
-# Supplementary Figure 5. Independent validation of the FGFBP2-associated effector T cell phenotype in AML allo-HSCT cohorts.
+# Supplementary Figure 5 | Independent validation of the FGFBP2-associated effector T cell phenotype in AML allo-HSCT cohorts (GSE216187 & GSE222633)
 
-GSE216187 and GSE222633 extend the effector-state comparison to independent transplant cohorts.
+> [Back to Repository Overview (EN)](../../README.md) · [返回仓库首页 (中文)](../../README.zh-CN.md)
 
-![S05](Combined/S05.png)
+![Fig. S5](Combined/S05.png)
 
-[PDF](Combined/S05.pdf) · [Original EMF](Combined/S05.emf)
+[Download PDF](Combined/S05.pdf) · [Original EMF](Combined/S05.emf) · [Global Data Overview](../../00_Global_Data/README.md)
 
-(A) UMAP visualization of annotated bone marrow cell populations from six patients with AML approximately 100 days after allo-HSCT, including three patients in CR and three patients who subsequently experienced early relapse (REL).
+## Key Findings
 
-(B) Heatmap showing the expression of representative marker genes across the annotated CD8⁺ T cell, CD4⁺ T cell, and hematopoietic stem and progenitor cell (HSPC) populations.
+In the day +100 post-allo-HSCT bone marrow cohort (`GSE216187`; 3 `CR`, 3 early `REL`), unbiased Spearman transcriptional similarity (excluding `FGFBP2` and `ADGRG1` to prevent circularity) confirms that external `CD8 eff. 1` and `CD8 eff. 2` clusters closely match primary `S2_CD8_Teff`, with elevated `ADGRG1`/`FGFBP2` expression in `CR` (`Fig. S5A–D`). In the longitudinal donor–recipient cohort (`GSE222633`; 5 pairs), high-resolution `CD8+` annotation verifies consistent `FGFBP2` and `ADGRG1` expression in `CD8+ Teff` across post-G-CSF, day +90, and day +180 sampling points (`Fig. S5E–G`).
 
-(C) Spearman correlation analysis assessing the transcriptional similarity between CD8⁺ T cell subsets in the external cohort and the S2_CD8_Teff population identified in our study.
+## Panel Descriptions
 
-(D) UMAP feature plots showing the expression distributions of ADGRG1 and FGFBP2 in the CR and REL groups. Panels A–D were generated from the external validation cohort (GEO: GSE216187).
+- **(A–B)** `GSE216187` bone marrow cell landscape UMAP (`A`) and 24-celltype canonical marker expression heatmap (`B`).
+- **(C)** Spearman transcriptional similarity between `GSE216187` `CD8+` subsets and primary `S2_CD8_Teff` (excluding `FGFBP2`/`ADGRG1`).
+- **(D)** `ADGRG1` and `FGFBP2` feature distributions stratified by `CR` and `REL` in `GSE216187`.
+- **(E–F)** `GSE222633` annotated `CD8+` T cell UMAP (`E`) and canonical marker dot plot (`F`).
+- **(G)** Longitudinal `FGFBP2` expression comparisons in `CD8+ Teff` between `CR` and `REL` across post-G-CSF, day +90, and day +180 (`GSE222633`).
 
-(E) UMAP visualization of annotated CD8⁺ T cell subsets, including naïve, Tcm, Tem, Teff, and cycling T cells, as well as Trm-like cells.
-
-(F) Dot plot showing the expression of representative marker genes across the annotated CD8⁺ T cell subsets. Dot size indicates the percentage of cells expressing each gene, and color represents the average expression level.
-
-(G) Violin plots comparing FGFBP2 expression in CD8⁺ Teff cells between the CR and REL groups across the indicated sampling time points (post-G-CSF mobilization, and days +90 and +180 post-allo-HSCT). Red and blue indicate the CR and REL groups, respectively. Panels E–G were generated from the external validation cohort (GEO: GSE222633).
-
-## Panel code and data
+## Panel Directory
 
 [A](a_S05a/README.md) · [B](b_S05b/README.md) · [C](c_S05c/README.md) · [D](d_S05d/README.md) · [E](e_S05e/README.md) · [F](f_S05f/README.md) · [G](g_S05g/README.md)
 
-## Figure source and execution
+## Code & Reproduction
 
-Combined contains the exact EMF embedded in the supplied manuscript and raster PNG/PDF previews. Server panel exports are retained where located. Panel pages identify shared inputs and original scripts. Historical interactive scripts require the documented session objects; source fragments ending in `.source.txt` are not standalone programs.
-
-Table-based CD8 UMAP and marker entries from the repository root: `python 00_Settings/run_saved_plot.py S05ef --output /path/to/new-output`.
+All saved-table panels for `Fig. S5` can be reproduced directly from compact tables included in this repository:
+```bash
+python 00_Settings/run_saved_plot.py S05b  --output /path/to/output_S05b
+python 00_Settings/run_saved_plot.py S05c  --output /path/to/output_S05c
+python 00_Settings/run_saved_plot.py S05ef --output /path/to/output_S05ef
+python 00_Settings/run_saved_plot.py S05f  --output /path/to/output_S05f
+python 00_Settings/run_saved_plot.py S05g  --output /path/to/output_S05g
+```

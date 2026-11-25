@@ -1,29 +1,34 @@
-# Fig. 2 | Remodelling of T cell functional states and the TCR repertoire post-allo-HSCT.
+# Fig. 2 | Remodelling of T cell functional states and the TCR repertoire post-allo-HSCT
 
-T cell recovery is biased toward effector and exhausted states. Functional activation increases while the TCR repertoire remains restricted.
+> [Back to Repository Overview (EN)](../README.md) · [返回仓库首页 (中文)](../README.zh-CN.md)
 
-![M02](Combined/M02.png)
+![Fig. 2](Combined/M02.png)
 
-[PDF](Combined/M02.pdf) · [Original EMF](Combined/M02.emf)
+[Download PDF](Combined/M02.pdf) · [Original EMF](Combined/M02.emf) · [Primary Shared Inputs](../00_Global_Data/Shared_Inputs/Primary/README.md)
 
-(A) UMAP visualization of T cell sub-populations. Re-clustering analysis of the T cell compartment reveals 15 distinct transcriptional states. These include naive T cells (CD4+ Naive and CD8+ Naive); memory T cell subsets, comprising stem-like memory T cells (Tscm), central memory T cells (Tcm), and effector memory T cells (Tem); effector T cell subsets, consisting of effector T cells (Teff) and terminally exhausted T cells (Tex); as well as innate-like T cells, such as natural killer T cells (NKT), mucosal-associated invariant T cells (MAIT), and gamma-delta T (γδT) cells. 
+## Key Findings
 
-(B) Dot plot illustrating the expression of lineage-specific and functional marker genes. 
+High-resolution re-clustering of **72,884 T cells** identifies **15 transcriptionally distinct subsets** spanning naive, memory (`Tscm`, `Tcm`, `Tem`), cytotoxic effector (`Teff`), terminally exhausted (`Tex`), regulatory (`Treg`), and innate-like (`Trm-like`, `NKT`, `MAIT`, `γδT`) compartments (`Fig. 2A–B`). Despite numerical recovery by month 6, post-transplant reconstitution exhibits persistent naive T cell depletion and pronounced expansion of cytotoxic `CD8+ Teff` and `CD8+ Tex` populations (`Fig. 2C`). Functionally, reconstituting T cells display elevated activation, cytotoxicity, and terminal exhaustion module scores peaking at `Post-1M` (`Fig. 2D`). Paired scTCR-seq demonstrates sharp clonal contraction and persistently reduced repertoire diversity (`Shannon`, `Inv. Simpson`, `Chao`, `ACE`, and `Inv. Pielou`) throughout the 6-month window (`Fig. 2E–F`).
 
-(C) Temporal dynamics of T cell subset composition. Stacked area plot depicting the relative abundance of defined T cell subsets across HD, Pre-HSCT, Post-1M, Post-3M and Post-6M samples. 
+## Panel Descriptions
 
-(D) Violin plots displaying the distribution of scores for T cell activation, cytotoxicity, and terminal exhaustion across different stages. For the embedded boxplots, the bottom and top of the box are located at the 25th and 75th percentiles, respectively. The bars represent values more than 1.5 times the interquartile range from the border of each box. P values were calculated using the Wilcoxon rank-sum test (two-sided; ****P < 0.0001, ***P < 0.001, **P < 0.01, *P < 0.05, n.s., not significant)
+- **(A)** UMAP projection of the 15 transcriptionally defined T cell states.
+- **(B)** Canonical lineage and functional marker dot plot (`IL7R`, `CCR7`, `TCF7`, `SELL`, `GNLY`, `PRF1`, `GZMH`, `GZMK`, `LAG3`, `TIGIT`, `PDCD1`, and unconventional lineage markers).
+- **(C)** Longitudinal composition of T cell subsets across `HD`, `Pre-HSCT`, `Post-1M`, `Post-3M`, and `Post-6M`.
+- **(D)** Violin-box plots of activation, cytotoxicity, and terminal exhaustion module scores across stages (two-sided Wilcoxon rank-sum test).
+- **(E)** Paired scTCR-seq clonotype abundance curves showing repertoire skewing after allo-HSCT.
+- **(F)** Longitudinal TCR repertoire diversity indices (`Shannon`, `Inv. Simpson`, `Chao`, `ACE`, `Inv. Pielou`).
 
-(E) Clonotype abundance curves derived from paired scTCR-seq data, demonstrating skewing and contraction of the TCR repertoire post-allo-HSCT. 
+## Panel Directory
 
-(F) Longitudinal evaluation of TCR repertoire diversity. Comprehensive metrics including Shannon, inverse Simpson, Chao, ACE, and inverse Pielou indices, summarizing the dramatic loss of diversity and increase in clonal evenness post-allo-HSCT.
+[A (`a_M02a`)](a_M02a/README.md) · [B (`b_M02b`)](b_M02b/README.md) · [C (`c_M02c`)](c_M02c/README.md) · [D (`d_M02d`)](d_M02d/README.md) · [E (`e_M02e`)](e_M02e/README.md) · [F (`f_M02f`)](f_M02f/README.md)
 
-## Panel code and data
+## Code, Inputs & Reproduction
 
-[A](a_M02a/README.md) · [B](b_M02b/README.md) · [C](c_M02c/README.md) · [D](d_M02d/README.md) · [E](e_M02e/README.md) · [F](f_M02f/README.md)
-
-## Figure source and execution
-
-Combined contains the exact EMF embedded in the supplied manuscript and raster PNG/PDF previews. Server panel exports are retained where located. Panel pages identify shared inputs and original scripts. Historical interactive scripts require the documented session objects; source fragments ending in `.source.txt` are not standalone programs.
-
-Saved cell-level inputs and trajectory geometry are in [Primary shared inputs](../00_Global_Data/Shared_Inputs/Primary/README.md).
+- **Saved-table verification (no large RDS required)**:
+  ```bash
+  python 00_Settings/run_saved_plot.py M02 --output /path/to/output_M02
+  ```
+  Generates `M02a` (15-subset UMAP), `M02b` (canonical marker dot plot), `M02c` (subset composition), and `M02d`/`S02d` (functional score violins) directly from `00_Global_Data/Shared_Inputs/Primary/Tcell_*.csv.gz`.
+- **Original archived scripts**: [01_scRepertoire_analysis.R](00_Preprocess/01_scRepertoire_analysis.R), [01_primary_landscape_and_TCR.R](../Main_Figure_01/01_Code/01_primary_landscape_and_TCR.R), and archived score notes (`01_Code/*.source.txt`).
+- **Primary server objects**: `/data5/tiany/HSCT/Result/Tcell.rds` (72,884 cells) and `/data5/tiany/HSCT/Result/final_vdj.rda` (needed for full `scRepertoire` bootstrapping in `M02e–f`).

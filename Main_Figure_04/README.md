@@ -1,35 +1,38 @@
-# Fig. 4 | Transcriptional programmes linked to effector-state remodelling and clinical response.
+# Fig. 4 | Transcriptional programmes linked to effector-state remodelling and clinical response
 
-Effector-state transcriptional programs identify FGFBP2 as a candidate marker. External cohorts link its expression to favorable clinical response; these observations support association rather than a causal treatment effect.
+> [Back to Repository Overview (EN)](../README.md) · [返回仓库首页 (中文)](../README.zh-CN.md)
 
-![M04](Combined/M04.png)
+![Fig. 4](Combined/M04.png)
 
-[PDF](Combined/M04.pdf) · [Original EMF](Combined/M04.emf)
+[Download PDF](Combined/M04.pdf) · [Original EMF](Combined/M04.emf) · [External Cohorts & Data](../00_Global_Data/README.md)
 
-(A) Heatmaps showing the inferred transcription factor (TF) activity (VIPER) for CD8+ and CD4+ T cells. 
+## Key Findings
 
-(B) Gene regulatory network (GRN) visualization of differentially active transcriptional regulators (TBX21, EOMES, and PRDM1) and their target differentially expressed genes (DEGs) in CD8+ and CD4+ T cells. 
+VIPER transcription factor activity inference and ARACNe regulon analysis show that progression from naive `State 1` (`TCF7`, `LEF1`, `FOXP1`, `BCL11B`) toward effector differentiation activates a **`TBX21`/`PRDM1`/`EOMES`-associated cytotoxic transcriptional program** regulating `PRF1`, `GZMH`, `ADGRG1`, and **`FGFBP2`** (`Fig. 4A–B`). Direct comparison of `S2_CD8_Teff` versus `S3_CD8_Teff` highlights strong enrichment of `FGFBP2`, `ADGRG1`, and `GNLY` in `S2_CD8_Teff`, whereas `S3_CD8_Teff` retains higher `GZMK` and `CD27` (`Fig. 4C`). Across public AML cohorts (Kaplan-Meier Plotter: TCGA and GEO), higher `FGFBP2` expression associates with improved overall survival (median OS 19.6 vs. 12.0 months; `HR = 0.79`, `P = 0.011`; `Fig. 4D`). Three independent post-allo-HSCT single-cell cohorts consistently link `FGFBP2`-high `CD8+` effector T cells to sustained complete remission (`CR`): expansion of an `FGFBP2+ S100B+` `Teff-1` subcluster in responders to salvage decitabine + ipilimumab (`GSE223844`, `Fig. 4E–G`), higher `FGFBP2` effector expression in CR versus early relapse bone marrow (`GSE216187`, `Fig. 4H`), and a pre-relapse dip at day +90 followed by post-DLI recovery in longitudinal donor–recipient pairs (`GSE222633`, `Fig. 4I`). Together, these findings support `FGFBP2` as a candidate marker associated with favorable post-transplant clinical outcomes.
 
-(C) Volcano plots identifying DEGs between State 2 (S2) and State 3 (S3) Teff cells for both CD8+ and CD4+ lineages. Key effector molecules such as FGFBP2 and ADGRG1 are highlighted. 
+## Panel Descriptions
 
-(D) Kaplan-Meier survival analysis of an independent AML patient cohort stratified by the expression level of FGFBP2. P values were determined using the log-rank test. 
+- **(A)** VIPER-inferred transcription factor activity heatmaps across `CD8+` and `CD4+` differentiation states.
+- **(B)** Gene regulatory network (GRN) of `TBX21`, `EOMES`, and `PRDM1` and their differentially expressed cytotoxic target genes.
+- **(C)** Volcano plots comparing `S2` versus `S3` `Teff` cells in `CD8+` and `CD4+` lineages (`FGFBP2`, `ADGRG1`, `GNLY` vs. `GZMK`, `CD27`).
+- **(D)** Kaplan-Meier overall survival analysis of AML cohorts stratified by `FGFBP2` expression (log-rank test).
+- **(E–G)** Independent salvage immunotherapy cohort (`GSE223844`): 3D STARTRAC clonal summary (`E`), `CD8+ Teff` subcluster UMAP across `CR-Pre/Post` and `NR-Pre/Post` (`F`), and lineage marker dot plot (`G`).
+- **(H)** Independent post-HSCT bone marrow cohort (`GSE216187`): Z-score heatmap of 16 differentially expressed effector markers comparing `CR` and `REL` patients.
+- **(I)** Independent longitudinal allo-HSCT cohort (`GSE222633`): patient-level `FGFBP2` expression trajectories across donor–recipient pairs (`CR` vs. `REL`).
 
-(E) Three-dimensional summary of the clonal expansion index, tissue distribution index, and state transition index across different CD8+ T cell subsets in patients with complete remission (CR) and non-response (NR).
-
-(F) UMAP projection of CD8⁺ Teff subclusters. Based on their transcriptional profiles, CD8⁺ Teff cells were classified into three subclusters (Teff-1, Teff-2, and Teff-3), and their distributions across the four clinical categories (CR-Pre, CR-Post, NR-Pre, and NR-Post) are shown.
-
-(G) Dot plot illustrating the expression of lineage markers across Teff subclusters. Panels E-G were generated from the external validation cohort (GEO: GSE223844).
-
-(H) Heatmap showing the expression patterns of selected differentially expressed genes in the CD8⁺ T cell compartment between the CR and Relapse (REL) groups. Expression values are displayed as Z-scores (GEO: GSE216187).
-
-(I) Patient-level longitudinal changes in FGFBP2 expression across the same sampling time points. Each line represents an individual donor–recipient pair, with red and blue indicating the CR and REL groups, respectively (GEO: GSE222633).
-
-## Panel code and data
+## Panel Directory
 
 [A](a_M04a/README.md) · [B](b_M04b/README.md) · [C](c_M04c/README.md) · [D](d_M04d/README.md) · [E](e_M04e/README.md) · [F](f_M04f/README.md) · [G](g_M04g/README.md) · [H](h_M04h/README.md) · [I](i_M04i/README.md)
 
-## Figure source and execution
+## Code, Inputs & Reproduction
 
-Combined contains the exact EMF embedded in the supplied manuscript and raster PNG/PDF previews. Server panel exports are retained where located. Panel pages identify shared inputs and original scripts. Historical interactive scripts require the documented session objects; source fragments ending in `.source.txt` are not standalone programs.
+- **Saved-table reproduction (verified directly from compact repository tables)**:
+  ```bash
+  # Fig. 4H (GSE216187 16-marker CR vs REL heatmap)
+  python 00_Settings/run_saved_plot.py M04h --output /path/to/output_M04h
 
-Table-based heatmap entry from the repository root: `python 00_Settings/run_saved_plot.py M04h --output /path/to/new-output`.
+  # Fig. 4I (GSE222633 longitudinal CR vs REL trajectories)
+  python 00_Settings/run_saved_plot.py M04i --output /path/to/output_M04i
+  ```
+- **Archived preprocessing & external cohort pipelines**: `00_Preprocess/GSE223844/`, `00_Preprocess/GSE216187_*/`, and `00_Preprocess/GSE222633_*/`.
+- **Known source boundary**: Panel `Fig. 4D` was generated via the web-based Kaplan-Meier Plotter platform (TCGA + GSE12417/GSE37642/GSE6891); exact exported patient-level survival tables were not archived locally and the submitted panel image is retained.

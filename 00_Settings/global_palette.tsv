@@ -1,0 +1,79 @@
+palette_id	order	group	label	hex	figures
+Primary_PBMC	1	PBMC_lineage	HSC/MPPs	#49B2BE	M01b,M01d,M01e,S01b
+Primary_PBMC	2	PBMC_lineage	T	#699ECA	M01b,M01d,M01e,S01b
+Primary_PBMC	3	PBMC_lineage	NK	#0098E2	M01b,M01d,M01e,S01b
+Primary_PBMC	4	PBMC_lineage	B	#FB5039	M01b,M01d,M01e,S01b
+Primary_PBMC	5	PBMC_lineage	Monocytes	#C07DD9	M01b,M01d,M01e,S01b
+Primary_PBMC	6	PBMC_lineage	Granulocytes	#D97DAA	M01b,M01d,M01e,S01b
+Primary_PBMC	7	PBMC_lineage	cDC	#FF8C00	M01b,M01d,M01e,S01b
+Primary_PBMC	8	PBMC_lineage	pDC	#DE3163	M01b,M01d,M01e,S01b
+Primary_PBMC	9	PBMC_lineage	Platelets	#8582BD	M01b,M01d,M01e,S01b
+Primary_Tcell	1	Tcell_subset	CD4 Naive	#A3CFE8	M02a,M02c,M03g,M03j,S02b
+Primary_Tcell	2	Tcell_subset	CD4 Tscm	#8AC4C1	M02a,M02c,M03g,M03j,S02b
+Primary_Tcell	3	Tcell_subset	CD4 Tcm	#41A6AB	M02a,M02c,M03g,M03j,S02b
+Primary_Tcell	4	Tcell_subset	CD4 Tem	#DFAA81	M02a,M02c,M03g,M03j,S02b
+Primary_Tcell	5	Tcell_subset	CD4 Teff	#CA8652	M02a,M02c,M03g,M03j,S02b
+Primary_Tcell	6	Tcell_subset	CD4 Treg	#246B9A	M02a,M02c,M03g,M03j,S02b
+Primary_Tcell	7	Tcell_subset	CD8 Naive	#CDB4D8	M02a,M02c,M03a,M03d,S02b
+Primary_Tcell	8	Tcell_subset	CD8 Tcm	#EC8EC8	M02a,M02c,M03a,M03d,S02b
+Primary_Tcell	9	Tcell_subset	CD8 Tem	#764B88	M02a,M02c,M03a,M03d,S02b
+Primary_Tcell	10	Tcell_subset	CD8 Teff	#A0478D	M02a,M02c,M03a,M03d,S02b
+Primary_Tcell	11	Tcell_subset	CD8 Tex	#F7B7A3	M02a,M02c,M03a,M03d,S02b
+Primary_Tcell	12	Tcell_subset	Trm-like	#D48B8B	M02a,M02c,S02b
+Primary_Tcell	13	Tcell_subset	NKT	#F37A6A	M02a,M02c,S02b
+Primary_Tcell	14	Tcell_subset	MAIT	#9DAE55	M02a,M02c,S02b
+Primary_Tcell	15	Tcell_subset	γδT	#64AE55	M02a,M02c,S02b
+Primary_Timepoint	1	Timepoint	Pre-HSCT	#7030A0	M02d,M02e,M02f,S01a,S02d
+Primary_Timepoint	2	Timepoint	HD	#0070C0	M02d,M02e,M02f,S01a,S02d
+Primary_Timepoint	3	Timepoint	Post-1M	#FF5050	M02d,M02e,M02f,S01a,S02d
+Primary_Timepoint	4	Timepoint	Post-3M	#F78832	M02d,M02e,M02f,S01a,S02d
+Primary_Timepoint	5	Timepoint	Post-6M	#70AD47	M02d,M02e,M02f,S01a,S02d
+Primary_Trajectory_State	1	Trajectory_State	S1	#93A9FB	M03c,M03i,S03a-d
+Primary_Trajectory_State	2	Trajectory_State	S2	#E285E6	M03c,M03i,M03e,M03k
+Primary_Trajectory_State	3	Trajectory_State	S3	#6FBA8A	M03c,M03i,S03a-d
+GSE216187_Celltype	1	Celltype	CD8 NV	#DFC4DE	S05a,S05b,S05c
+GSE216187_Celltype	2	Celltype	CD8 hobit	#B092B2	S05a,S05b,S05c
+GSE216187_Celltype	3	Celltype	CD8 mem. 1	#D475A8	S05a,S05b,S05c
+GSE216187_Celltype	4	Celltype	CD8 mem. 2	#A8C5DB	S05a,S05b,S05c
+GSE216187_Celltype	5	Celltype	CD8 mem. 3	#7EB5D6	S05a,S05b,S05c
+GSE216187_Celltype	6	Celltype	CD8 eff. 1	#569ECF	S05a,S05b,S05c
+GSE216187_Celltype	7	Celltype	CD8 eff. 2	#3D7AB8	S05a,S05b,S05c
+GSE216187_Celltype	8	Celltype	CD8 IFN	#6B429E	S05a,S05b,S05c
+GSE216187_Celltype	9	Celltype	CD4 NV	#E38888	S05a,S05b
+GSE216187_Celltype	10	Celltype	CD4 mem.	#E36442	S05a,S05b
+GSE216187_Celltype	11	Celltype	Th17	#D9382B	S05a,S05b
+GSE216187_Celltype	12	Celltype	Treg	#A81C1C	S05a,S05b
+GSE216187_Celltype	13	Celltype	CD4 IFN	#7A1122	S05a,S05b
+GSE216187_Celltype	14	Celltype	γδT	#8B52A3	S05a,S05b
+GSE216187_Celltype	15	Celltype	MAIT	#5C2D82	S05a,S05b
+GSE216187_Celltype	16	Celltype	MLP	#1F8A8A	S05a,S05b
+GSE216187_Celltype	17	Celltype	MEP	#229EAB	S05a,S05b
+GSE216187_Celltype	18	Celltype	NP	#3BC4BE	S05a,S05b
+GSE216187_Celltype	19	Celltype	MDP	#42B883	S05a,S05b
+GSE216187_Celltype	20	Celltype	pDCs	#7BC993	S05a,S05b
+GSE216187_Celltype	21	Celltype	cDCs	#4DB86E	S05a,S05b
+GSE216187_Celltype	22	Celltype	preB	#2E9E52	S05a,S05b
+GSE216187_Celltype	23	Celltype	pro/pre T	#1B7D3A	S05a,S05b
+GSE216187_Celltype	24	Celltype	MP/mono	#115C27	S05a,S05b
+GSE216187_Outcome_M04h	1	Outcome	CR	#B15A50	M04h
+GSE216187_Outcome_M04h	2	Outcome	REL	#61749B	M04h
+GSE216187_Heatmap_Zscore	1	Continuous	Low (-2)	#5C53B6	M04h
+GSE216187_Heatmap_Zscore	2	Continuous	Center (0)	#F7F7F7	M04h
+GSE216187_Heatmap_Zscore	3	Continuous	High (+2)	#F16643	M04h
+GSE222633_CD8	1	CD8_subset	CD8 Naive	#DFC4DE	S05e,S05f
+GSE222633_CD8	2	CD8_subset	CD8 Tem	#7EB5D6	S05e,S05f
+GSE222633_CD8	3	CD8_subset	CD8 Teff	#3D7AB8	S05e,S05f
+GSE222633_CD8	4	CD8_subset	CD8 Cycling	#C69A45	S05e,S05f
+GSE222633_CD8	5	CD8_subset	CD8 Activated	#A34F65	S05e,S05f
+GSE222633_CD8	6	CD8_subset	MAIT-like T	#5C2D82	S05e,S05f
+GSE222633_CD8	7	CD8_subset	gdT-like T	#8B52A3	S05e,S05f
+GSE222633_CD8	8	CD8_subset	CD8 T (low RNA)	#BCC6CC	S05e,S05f
+GSE222633_CD8	9	CD8_subset	CD4-like T (review)	#E38888	S05e,S05f
+GSE222633_CD8	10	CD8_subset	NK/T-like (review)	#5C6D73	S05e,S05f
+GSE222633_Pair	1	Donor_Recipient_Pair	A	#3B6C80	M04i,S05g
+GSE222633_Pair	2	Donor_Recipient_Pair	B	#B47A4E	M04i,S05g
+GSE222633_Pair	3	Donor_Recipient_Pair	C	#68875A	M04i,S05g
+GSE222633_Pair	4	Donor_Recipient_Pair	D	#A34F65	M04i,S05g
+GSE222633_Pair	5	Donor_Recipient_Pair	E	#7C6A98	M04i,S05g
+GSE222633_Outcome	1	Outcome	CR	#2878B5	M04i,S05g
+GSE222633_Outcome	2	Outcome	REL	#D64B40	M04i,S05g
