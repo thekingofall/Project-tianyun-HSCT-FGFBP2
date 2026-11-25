@@ -11,3 +11,5 @@ The two export R scripts were run against the primary server objects. Their outp
 Known source gaps: the editable M01a schematic; exact patient-level input used by the Kaplan-Meier Plotter result in M04d; and standalone exports for several primary panels. Original interactive code contains reused working variables, so an exact run command is supplied only where a saved-table entry is supported. Final composite figures come directly from the submitted Word documents.
 
 The historical GSE222633 annotation script names FCD8.rds as an output, but that file was not present at its stated top-level server path during this inventory. Its saved annotation and plotting tables are included; the available CD8.rds is listed separately without assuming it is identical.
+
+The exact NeoTCR scoring implementation and score column for S03e/f were not located in the saved Tcell object or inspected scripts; the submitted panels are preserved.
