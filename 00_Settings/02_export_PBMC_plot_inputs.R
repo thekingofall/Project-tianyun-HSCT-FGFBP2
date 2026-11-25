@@ -1,0 +1,11 @@
+suppressPackageStartupMessages(library(Seurat))
+args=commandArgs(TRUE); src=args[1]; out=args[2]; dir.create(out,recursive=TRUE,showWarnings=FALSE)
+x=readRDS(file.path(src,'scRNA224.rds'))
+stopifnot(ncol(x)==175531L,length(unique(x$orig.ident))==23L)
+writegz=function(d,n){f=gzfile(file.path(out,paste0(n,'.csv.gz')),'wt');write.csv(d,f,row.names=FALSE);close(f)}
+d=x@meta.data;d$cell_id=rownames(d);writegz(d,'PBMC_metadata')
+u=as.data.frame(Embeddings(x,'umap'));u$cell_id=rownames(u);writegz(u,'PBMC_UMAP')
+g=intersect(c('CD34','SPINK2','PROM1','CD3D','CD3E','CD3G','NKG7','GNLY','CX3CR1','CD79A','CD19','MS4A1','CD14','VCAN','LYZ','FCGR3B','CMTM2','S100A8','CD1C','FCER1A','ENHO','IL3RA','CLEC4C','JCHAIN','PPBP','PF4','GP9'),rownames(x))
+e=as.data.frame(t(as.matrix(GetAssayData(x,assay='RNA',slot='data')[g,,drop=FALSE])));e$cell_id=rownames(e);writegz(e,'PBMC_marker_logexpression')
+write.csv(as.data.frame(table(sample=x$orig.ident,celltype=x$Celltype)),file.path(out,'PBMC_sample_celltype_counts.csv'),row.names=FALSE)
+cat('PBMC export: 175531 cells; 23 samples\n')

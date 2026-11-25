@@ -1,0 +1,12 @@
+label	hex
+CD8 NV	#DFC4DE
+CD8 hobit	#B092B2
+CD8 mem. 1	#D475A8
+CD8 mem. 2	#A8C5DB
+CD8 mem. 3	#7EB5D6
+CD8 eff. 1	#569ECF
+CD8 eff. 2	#3D7AB8
+CD8 IFN	#6B429E
+negative	#2166AC
+zero	#F7F7F7
+positive	#B2182B

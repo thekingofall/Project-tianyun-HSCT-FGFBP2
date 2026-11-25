@@ -1,0 +1,41 @@
+method	celltype	rho	rank
+Centered HVG, markers excluded	CD8 NV	-0.490312502615373	8
+Centered HVG, markers excluded	CD8 hobit	-0.371448633140088	7
+Centered HVG, markers excluded	CD8 mem. 1	-0.321726939847501	5
+Centered HVG, markers excluded	CD8 mem. 2	0.0584895867074877	4
+Centered HVG, markers excluded	CD8 mem. 3	0.455710533746916	3
+Centered HVG, markers excluded	CD8 eff. 1	0.6910128336945	2
+Centered HVG, markers excluded	CD8 eff. 2	0.779491335869096	1
+Centered HVG, markers excluded	CD8 IFN	-0.342658992218819	6
+Centered HVG, markers included	CD8 NV	-0.495494432987795	8
+Centered HVG, markers included	CD8 hobit	-0.378304477136129	7
+Centered HVG, markers included	CD8 mem. 1	-0.329208402973671	5
+Centered HVG, markers included	CD8 mem. 2	0.0566893424036281	4
+Centered HVG, markers included	CD8 mem. 3	0.46073855925157	3
+Centered HVG, markers included	CD8 eff. 1	0.694415132280241	2
+Centered HVG, markers included	CD8 eff. 2	0.781923399076877	1
+Centered HVG, markers included	CD8 IFN	-0.349940034592185	6
+Centered union HVG	CD8 NV	-0.305198781391247	8
+Centered union HVG	CD8 hobit	-0.217568476710943	7
+Centered union HVG	CD8 mem. 1	-0.180964717604775	6
+Centered union HVG	CD8 mem. 2	0.00994655977555119	4
+Centered union HVG	CD8 mem. 3	0.280272496351638	3
+Centered union HVG	CD8 eff. 1	0.422431930512151	2
+Centered union HVG	CD8 eff. 2	0.522105066808535	1
+Centered union HVG	CD8 IFN	-0.143673510816046	5
+Uncentered HVG	CD8 NV	0.565732872541663	8
+Uncentered HVG	CD8 hobit	0.679130002642354	7
+Uncentered HVG	CD8 mem. 1	0.824669713209669	4
+Uncentered HVG	CD8 mem. 2	0.823242797606707	5
+Uncentered HVG	CD8 mem. 3	0.882083023778142	3
+Uncentered HVG	CD8 eff. 1	0.906980581712237	2
+Uncentered HVG	CD8 eff. 2	0.930581602061551	1
+Uncentered HVG	CD8 IFN	0.760153516797762	6
+Centered pooled cells	CD8 NV	-0.499690107333367	8
+Centered pooled cells	CD8 hobit	-0.323875265528188	5
+Centered pooled cells	CD8 mem. 1	-0.353177209630029	6
+Centered pooled cells	CD8 mem. 2	0.150287946779364	4
+Centered pooled cells	CD8 mem. 3	0.440055258380276	3
+Centered pooled cells	CD8 eff. 1	0.678685862911977	2
+Centered pooled cells	CD8 eff. 2	0.773060075006579	1
+Centered pooled cells	CD8 IFN	-0.384667775533249	7

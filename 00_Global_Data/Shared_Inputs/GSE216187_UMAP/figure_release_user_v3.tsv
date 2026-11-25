@@ -1,0 +1,2 @@
+figure	PNG	PDF	plain_R_code	palette	QA	status
+GSE216187_UMAP_usercolors_largepoints_v3	figures/png/GSE216187_UMAP_usercolors_largepoints_v3.png	figures/pdf/GSE216187_UMAP_usercolors_largepoints_v3.pdf	code/06_plain_plot_user_v3.R	data/plot_ready/palette_user_v3.tsv	reports/figure_QA_user_v3.json	Released

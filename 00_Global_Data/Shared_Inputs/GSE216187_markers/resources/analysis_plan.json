@@ -1,0 +1,26 @@
+{
+  "primary_scope": "CD8_EM",
+  "CD8_EM": [
+    "CD8 mem. 1",
+    "CD8 mem. 2",
+    "CD8 mem. 3",
+    "CD8 eff. 1",
+    "CD8 eff. 2"
+  ],
+  "secondary_scopes": [
+    "CD8_all",
+    "CD8_effector"
+  ],
+  "primary_markers": [
+    "FGFBP2",
+    "ADGRG1"
+  ],
+  "detection": "SoupX-corrected RNA counts >=1; >=2 as sensitivity",
+  "heatmap_mean": "log1p(mean(expm1(RNA data)))",
+  "heatmap_standardization": "Within-gene z-score across displayed columns; zero variance to zero",
+  "between_patient_test": "Two-sided Welch t-test on 3 CR and 3 REL patient summaries",
+  "within_patient_test": "Two-sided paired t-test on patient FGFBP2 detected vs not detected summaries",
+  "state_signatures": "Canonical independent panels, exclude FGFBP2 and ADGRG1; not the manuscript S2 signature",
+  "pseudotime": "Deferred pending biological interpretation; state panels computed first",
+  "existing_UMAP_and_FeaturePlot": "Reuse; not regenerated"
+}

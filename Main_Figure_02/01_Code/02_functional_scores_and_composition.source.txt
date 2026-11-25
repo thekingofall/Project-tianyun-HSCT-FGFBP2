@@ -1,0 +1,472 @@
+GZ9 <- Tcell[,Tcell$orig.ident %in% c('GZ9')]
+HD <- Tcell[,Tcell$orig.ident %in% c('GZ5','GZ6','GZ7','GZ8','GZ9')]
+HD$condition1[HD$orig.ident %in% c("GZ5", "GZ6", "GZ7", "GZ8")] <- "Alive"
+HD$condition1[HD$orig.ident %in% c("GZ9")] <- "Death"
+HD$orig.ident=factor(HD$orig.ident,level=unique(HD$orig.ident))
+DimPlot(HD,group.by ='Celltype',split.by =  'condition1')
+HD$orig.ident <- factor(HD$orig.ident, levels = c('GZ5','GZ6','GZ7','GZ8','GZ9'))
+
+#各部分细胞构成
+t <- as.matrix(prop.table(table(HD$Celltype,HD$orig.ident), margin = 2)*100)#去除γδT
+p <- as.data.frame(t)
+mycolor<-c("#93A9FB", "#E285E6", "#6FBA8A")
+mycolor<-c("#A3CFE8",   # CD4 naive
+           "#8AC4C1",# CD4 Tscm
+           "#41A6AB",  # CD4 Tcm
+           "#DFAA81", # CD4 Tem
+           '#CA8652', # CD4 Teff
+           "#246B9A", # CD4 Treg
+           "#CDB4D8",  # CD8 naive
+           '#EC8EC8',  # CD8 Tcm
+           "#764B88",  # CD8 Tem
+           "#A0478D",  # CD8 Teff
+           "#F7B7A3",  # CD8 Tex
+           "#D48B8B",  # Trm -like
+           "#F37A6A",  # NKT
+           "#9DAE55",  # MAIT
+           "#64AE55")
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(hjust = 0.5,vjust = 0.5))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_fill_manual(values =mycolor)+ggtitle("T cell")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+table(HD$condition1,HD$Celltype)
+# 提供数据CRvsNR
+cr_counts <-  c(4108, 1594, 1076, 902, 921, 458, 2426, 562, 514, 1587, 307, 119, 919, 1593, 540)
+ctrl_counts <- c(595, 305, 196, 169, 112, 138, 222, 109, 98, 245, 45, 30, 92, 77, 285)
+cell_types <- c("CD4 Naive", "CD4 Tscm", "CD4 Tcm", "CD4 Tem", "CD4 Teff", "CD4 Treg", 
+                "CD8 Naive", "CD8 Tcm", "CD8 Tem", "CD8 Teff", "CD8 Tex", "Trm-like", 
+                "NKT", "MAIT", "γδT")
+# 创建一个函数来计算OR值、log2OR值和Fisher's精确检验的p值
+calculate_OR_and_pvalue <- function(cr_count, ctrl_count) {
+  # 计算OR值
+  odds_ratio <- (cr_count[1] / cr_count[2]) / (ctrl_count[1] / ctrl_count[2])
+  # 计算Fisher's精确检验的p值
+  fisher_test <- fisher.test(matrix(c(cr_count, ctrl_count), nrow = 2))
+  p_value <- fisher_test$p.value
+  # 计算log2OR值
+  log2_odds_ratio <- log2(odds_ratio)
+  # 计算log2OR值
+  log10_Pvalue <- -log10(p_value)
+  # 返回OR值、log2OR值和Fisher's精确检验的p值
+  return(list(OR = odds_ratio, log2_OR = log2_odds_ratio, p_value = p_value,log10_Pvalue=log10_Pvalue))
+}
+
+# 创建一个空列表来存储OR值、log2OR值和Fisher's精确检验的p值
+result_list <- list()
+
+# 循环遍历每种细胞类型，并计算OR值、log2OR值和Fisher's精确检验的p值
+for (i in seq_along(cell_types)) {
+  cr_count <- c(cr_counts[i], sum(cr_counts))
+  ctrl_count <- c(ctrl_counts[i], sum(ctrl_counts))
+  result_list[[i]] <- calculate_OR_and_pvalue(cr_count, ctrl_count)
+}
+
+# 将结果组合成数据框
+result_df <- data.frame(Cell_Type = cell_types, OR_Value = sapply(result_list, function(x) x$OR), 
+                        log2_OR_Value = sapply(result_list, function(x) x$log2_OR),
+                        p_value = sapply(result_list, function(x) x$p_value),
+                        log10_Pvalue = sapply(result_list, function(x) x$log10_Pvalue))
+
+# 输出结果
+print(result_df)
+###CRvsNR柱形图
+result_df$color <- ifelse(result_df$log2_OR_Value > 0, '#619CD9', '#E38D8C')
+result_df$significance <- ifelse(result_df$p_value < 0.001, "***", ifelse(result_df$p_value < 0.01, "**", ifelse(result_df$p_value < 0.05, "*", "n.s")))
+
+result_df$Cell_Type <- factor(result_df$Cell_Type, levels = c("CD4 Naive", "CD4 Tscm", "CD4 Tcm", "CD4 Tem", "CD4 Teff", "CD4 Treg", "CD8 Naive", "CD8 Tcm", "CD8 Tem", "CD8 Teff", "CD8 Tex", "Trm-like", "NKT", "MAIT", "γδT"), ordered = TRUE)
+# Plot
+ggplot(result_df, aes(x = Cell_Type, y = log2_OR_Value, fill = color)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = significance, 
+                y = ifelse(log2_OR_Value >= 0, log2_OR_Value-0.05, log2_OR_Value)), 
+            vjust = ifelse(result_df$log2_OR_Value >= 0, -0.5, 1.5), size = 4) +  # 调整标签位置
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 10),  # 调整两个坐标轴的文本大小
+        axis.ticks = element_line(size = 0.5),  # 调整坐标轴刻度的粗细
+        panel.grid.major = element_blank(),  # 移除主要网格线
+        panel.grid.minor = element_blank(),  # 移除次要网格线
+        axis.line = element_line(color = "black", size = 0.5),  # 线条细化
+        panel.border = element_blank(),  # 移除面板边框
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +  # 移除面板背景
+  labs(x = "", y = "Enrichment
+(log2OR)", title = "Alive vs Death") +  # 更改坐标轴和标题的标签为中文
+  scale_fill_identity() 
+#评分
+Palette <- c('#7030a0', '#0070c0', '#70ad47', '#ff5050', '#f78832')
+my_comparisons <- list(c("GZ7","GZ9"))
+plot_data <- data.frame(group =CD8T$orig.ident,Aging = CD8T$texterm1)
+ggplot(plot_data, aes(x = group, y = Aging, color = group, fill = group)) +
+  geom_violin(position = position_dodge(width = 1), scale = 'width', color = "black") +
+  geom_boxplot(position = position_dodge(width = 1), outlier.size = 0.7, width = 0.1, show.legend = FALSE, color = "black") +
+  theme(panel.grid = element_blank(), panel.background = element_blank(), panel.border = element_blank(),
+        axis.line = element_line(color = "black"),
+        legend.title = element_blank(), legend.key = element_blank(),
+        axis.text.x = element_text(size = 12),  # 设置x轴字体大小为12
+        axis.text.y = element_text(size = 12),# 设置y轴字体大小为12
+        plot.title = element_text(hjust = 0.5)) +  # 设置标题居中
+  labs(x = '', y = '', title = 'CD8 Tcell Exhaustion Score')+scale_fill_manual(values = Palette)+ 
+  stat_compare_means(comparisons = my_comparisons,label = "p.signif",tip.length=0) #Cytotoxicity Terminal exhaustion Proliferation TCR signaling Activation
+#差异基因
+HD.markers <- FindAllMarkers(HD, only.pos = TRUE, min.pct = 0.25, logfc.threshscRNA = 0.25)
+write.csv(HD.markers,file = "./11月富集/HD.con.csv")
+
+#基因表达小提琴图
+features <-c("RBFOX2",'ENO1','BATF','EGR1','PDCD1','LAG3','CTLA4','TOX','TIGIT','HAVCR2')
+expr = t(as.matrix(Tcell@assays$RNA@data[features,]))
+posi= match(rownames(expr),rownames(Tcell@meta.data))
+ts = cbind(expr,Tcell@meta.data[posi,c("Celltype",'condition','condition1','orig.ident')])
+head(ts)
+source("/data5/tiany/Code/functions/Function_for_violin_plot.R")
+# 计算 误差线，这里用步骤三加载的函数，计算一下误差信息,只能算一个
+ggplot(ts, aes(x =condition, y = TOX, fill = condition)) +
+  geom_split_violin(trim = F, scale = "area", width = 1.5, alpha = 0.9) +
+  # 绘制箱线图
+  geom_boxplot(width = 0.25, outlier.shape = NA, alpha = 1) +
+  # 绘制置信区间
+  #geom_errorbar(stat = "summary", fun.data = "median_hilow", width = 0.1, color = "black") +
+  # 设置图例
+  labs(x = "", y = "Gene Expression Level", fill = "Group") +ggtitle("TOX") +
+  scale_fill_manual(values = c('#619CD9', '#E38D8C'))+#'#EB8ABA','#9584C1'
+  # 主题设置
+  theme_minimal()+
+  theme(axis.text = element_text(size = 10,color = "black"),
+        panel.grid.major = element_blank(),  # 去掉主要网格线
+        panel.grid.minor = element_blank(),  # 去掉次要网格线
+        axis.line = element_line(size = 0.6, color = "black"),  # 添加轴线
+        axis.ticks = element_line(size = 0.6),  # 添加刻度线
+        axis.text.x = element_text(angle = 90,vjust = 0.5, hjust = 1),  # 调整 x 轴文本角度和位置
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)# 去掉面板背景
+  )+stat_compare_means(aes(group=condition),
+                       method = "t.test",
+                       label = "p.signif",
+                       label.y = 5.5, size=4.5)
+
+my_comparisons1 <- list(c("Pre", "HD"),c("HD", "Post-1M"),
+                       c("HD", "Post-3M"),c("HD","Post-6M"))
+ggplot(ts, aes(x =Celltype, y =PDCD1, fill = Celltype)) +
+  geom_violin(trim = F, scale = "area", width = 1, alpha = 0.9) +
+  # 绘制箱线图
+  geom_boxplot(width = 0.25, outlier.shape = NA, alpha = 1) +
+  # 绘制置信区间
+  #geom_errorbar(stat = "summary", fun.data = "median_hilow", width = 0.1, color = "black") +
+  # 设置图例
+  labs(x = "", y = "Gene Expression Level", fill = "Group") +ggtitle("PDCD1") +
+  scale_fill_manual(values =mycolor )+#c('#7030a0','#0070c0','#ff5050','#f78832','#70ad47')
+  # 主题设置
+  theme_minimal()+
+  theme(axis.text = element_text(size = 10,color = "black"),
+        panel.grid.major = element_blank(),  # 去掉主要网格线
+        panel.grid.minor = element_blank(),  # 去掉次要网格线
+        axis.line = element_line(size = 0.6, color = "black"),  # 添加轴线
+        axis.ticks = element_line(size = 0.6),  # 添加刻度线
+        axis.text.x = element_text(angle = 90,vjust = 0.5, hjust = 1),  # 调整 x 轴文本角度和位置
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)# 去掉面板背景
+  )
++stat_compare_means(comparisons = my_comparisons1,label = "p.signif",tip.length=0)
+
+#方块热图
+gene <- c('RBFOX2','ANK2',"HLA-B", "GAREM1", "MALAT1","IFITM1","CD69","PCBP1","HIST1H1D","HIST1H1E",
+          "JUNB","DUSP1","TNFAIP3","SNHG5","JUND","GAPDH",
+          "HNRNPA1","HLA-C","GIMAP5", "GIMAP7", "APOO", "EEF1A1", "IL7R", "GAS5", "GIMAP1", 
+          "BTN3A2", "DENND2D", "IER2", "SARAF", "HSP90AA1", "RCSD1")
+gene <- c("CD74",  "STAT1", "TNFAIP3",   "COTL1", 
+          "HLA-DRB1","HLA-DQB1","HLA-DRA","HLA-DRB5",
+          "JUN", "PSME2",  "CCL5", "TRBV6-2", "TRAV12-2",
+          "IRF1", "DUSP1", "JUND", "CD69", "HIST1H1D", "HIST1H1E",
+          
+          "EEF1A1", "HNRNPA1", "TXNIP", "APOO", "HLA-C", "AKT3", "S1PR1", "KLF2",
+          "IL7R", "PRSS23", "GNLY", "LINC01871", "TPT1", "CCND3", "TOMM7", "EEF1B2",
+          "MYBL1", "TRG-AS1", "CD48", "SNHG6",
+          'EGR1','ENO1','BATF','TOX','PDCD1','LAG3','CTLA4','TIGIT','HAVCR2')
+gene_cell_exp <- AverageExpression(HD,
+                                   features = gene,
+                                   group.by = 'orig.ident',
+                                   slot = 'data') 
+gene_cell_exp <- as.data.frame(gene_cell_exp$RNA)
+df <- data.frame(colnames(gene_cell_exp))
+colnames(df) <- 'class'
+marker_exp <- t(scale(t(gene_cell_exp),scale = T,center = T))
+
+Heatmap(marker_exp,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        show_column_names = T,
+        show_row_names = TRUE,
+        column_title = NULL,
+        heatmap_legend_param = list(
+          title = ' '),
+        col = colorRampPalette(c('#229954','white', '#E67E22'))(50),
+        border = 'white',
+        rect_gp = gpar(col = "white", lwd = 1),
+        row_names_gp = gpar(fontsize = 8),
+        column_names_gp = gpar(fontsize = 8,angle = 0),
+        column_order = colnames(marker_exp))
+#TF
+mat <- as.matrix(HD@assays$RNA@data)
+acts <- run_mlm(mat=mat, net=net, .source='source', .target='target',
+                .mor='weight', minsize = 5)
+acts
+
+net <- decoupleR::get_collectri(organism='human', split_complexes=FALSE)
+mat <- as.matrix(HD@assays$RNA@data)
+net2 <- subset(net, !is.na(source) & !is.na(target))
+acts <- run_ulm(mat=mat, net=net2, .source='source', .target='target',
+                .mor='mor', minsize = 5)
+write.csv(net2,'./11月富集/HDTFnet.csv')
+HD[['TF']] <- acts %>%
+  pivot_wider(id_cols = 'source', names_from = 'condition',
+              values_from = 'score') %>%
+  column_to_rownames('source') %>%
+  Seurat::CreateAssayObject(.)
+saveRDS(HD,'HD1215.rds')
+
+CD8T <- Tcell[,Tcell$orig.ident %in% c("GZ5", "YZ5A", "YZ5C", "YZ5D", 
+                                        "GZ6", "YZ6A", "YZ6C", "YZ6D", 
+                                        "GZ7", "YZ7A", "YZ7C", "YZ7D", 
+                                        "GZ8", "YZ8A", "YZ8C", "YZ8D")]
+CD8T <- CD8T[,CD8T$Celltype %in% c("CD8 Naive","CD8 Tcm", "CD8 Tem", "CD8 Teff", "CD8 Tex", "Trm-like")]
+CD8T$Celltype=factor(CD8T$Celltype,level=unique(CD8T$Celltype))
+
+CD8T$condition1[CD8T$condition %in% c("Post-1M", "Post-3M", "Post-6M")] <- "Post-HSCT"
+CD8T$condition1[CD8T$orig.ident %in% c("GZ9")] <- "Death"
+CD8T$orig.ident=factor(CD8T$orig.ident,level=unique(CD8T$orig.ident))
+CD8T$condition=factor(CD8T$condition,level=unique(CD8T$condition))
+DimPlot(CD8T,group.by ='Celltype',split.by =  'condition1')
+CD8T$orig.ident <- factor(CD8T$orig.ident, levels = c("GZ5", "YZ5A", "YZ5C", "YZ5D", 
+                                                  "GZ6", "YZ6A", "YZ6C", "YZ6D", 
+                                                  "GZ7", "YZ7A", "YZ7C", "YZ7D", 
+                                                  "GZ8", "YZ8A", "YZ8C", "YZ8D"))
+CD8T$Celltype <- factor(CD8T$Celltype, levels = c("CD8 Naive","CD8 Tcm", "CD8 Tem", "CD8 Teff", "CD8 Tex", "Trm-like"))
+CD8T$Celltype=factor(CD8T$Celltype,level=unique(CD8T$Celltype))))
+Idents(CD8T) <- 'condition1'
+CD8T.markers <- FindAllMarkers(CD8T1, only.pos = TRUE, min.pct = 0.25, logfc.threshscRNA = 0.25)
+write.csv(CD8T.markers,file = "./11月富集/CD8T1.con.csv")
+
+CD8T1 <- CD8T[,CD8T$Celltype %in% c("CD8 Tem", "CD8 Teff", "CD8 Tex")]
+
+#绘制CD4和CD8占比柱状图
+# 加载必要的库
+library(ggplot2)
+library(reshape2)
+# 创建数据框
+data <- data.frame(
+  Condition = c("CD4 T cell", "CD8 T cell", "other T cell"),
+  Pre = c(42.9159, 27.32929, 29.75481),
+  HD = c(43.43295, 30.058, 26.50904),
+  Post_1M = c(38.20491, 31.96538, 29.8297),
+  Post_3M = c(27.44327, 49.36512, 23.19161),
+  Post_6M = c(31.81498, 46.9586, 21.22642)
+)
+# 转换数据为长格式
+data_long <- melt(data, id.vars = "Condition")
+# 绘制柱状图
+ggplot(data_long, aes(x = variable, y = value, fill = Condition)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "", y = "Proportion (%)", title = "", fill = NULL) +  # 去掉图例标题
+  scale_fill_manual(values = c("#93A9FB", "#E285E6", "#6FBA8A")) +  # 设置分组颜色
+  theme_minimal() +
+  theme(axis.text = element_text(size = 10, color = "black"),
+        panel.grid.major = element_blank(),  # 去掉主要网格线
+        panel.grid.minor = element_blank(),  # 去掉次要网格线
+        axis.line = element_line(size = 0.6, color = "black"),  # 添加轴线
+        axis.ticks = element_line(size = 0.6),  # 添加刻度线
+        axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 0.5),  # 调整 x 轴文本角度和位置
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5),  # 去掉面板背景
+        legend.position = "top",  # 将图例放在上方
+        legend.title = element_blank(),  # 去掉图例标题
+        legend.box = "horizontal") 
+
+library(ggplot2)
+# 创建数据框
+data <- data.frame(
+  TimePoint = factor(c("Pre", "HD", "Post-1M", "Post-3M", "Post-6M"), 
+                     levels = c("Pre", "HD", "Post-1M", "Post-3M", "Post-6M")),
+  Ratio = c(1.570326196, 1.444971389, 1.195196491, 0.555924304, 0.677511255)
+)
+colors <- c('#7030a0', '#0070c0', '#ff5050', '#f78832', '#70ad47')
+# 绘制折线图
+ggplot(data, aes(x = TimePoint, y = Ratio, group = 1)) +
+  geom_line(color = "black", size = 1) +  # 折线颜色设为黑色
+  geom_point(aes(color = TimePoint), size = 4) +  # 依时间点着色
+  scale_color_manual(values = colors) +  # 指定颜色
+  scale_y_continuous(limits = c(0.5, 1.6), breaks = seq(0.5, 1.6, by = 0.25)) +
+  labs(title = "CD4 T Cell/CD8 T Cell Ratio",
+       x = "",
+       y = "Ratio") +
+  theme_minimal() +  # 保留网格线
+  theme(
+    plot.title = element_text(hjust = 0.5), 
+    axis.text = element_text(size = 10, color = "black"),
+    axis.line = element_line(size = 0.5, color = "black"), 
+    axis.ticks = element_line(size = 0.5),  # 添加刻度线
+    axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 0.5),  # 调整 x 轴文本角度
+    panel.background = element_blank(),
+    legend.position = "none"  # 去除图例
+  )
+#T细胞不同时间点TF 方块热图
+library(ComplexHeatmap)
+library(grid)
+library(Seurat)
+DefaultAssay(scRNA) <- "RNA"
+features=c( "TCF7", "BCL11B", "LEF1","ZEB1", "EOMES", "RUNX3", "IRF5", "RORC", 
+            "FOXP3", "IKZF2", "E2F1", "E2F4", "PRDM16", "SHOX2", "FOXQ1", "SOX9")
+gene_cell_exp <- AverageExpression(HD,
+                                   features = features,
+                                   group.by = 'condition1',
+                                   slot = 'data') 
+gene_cell_exp <- as.data.frame(gene_cell_exp$RNA)
+df <- data.frame(colnames(gene_cell_exp))
+colnames(df) <- 'class'
+marker_exp <- t(scale(t(gene_cell_exp),scale = T,center = T))
+# 创建热图
+Heatmap(marker_exp,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        show_column_names = T,
+        show_row_names = TRUE,
+        column_title = NULL,
+        heatmap_legend_param = list(
+          title = ' '),
+        col = colorRampPalette(c('white',"#E072E9",'#45024A'))(50),
+        border = 'white',
+        rect_gp = gpar(col = "white", lwd = 1),
+        row_names_gp = gpar(fontsize = 8),
+        column_names_gp = gpar(fontsize = 8),
+        column_order = colnames(marker_exp))
+
+#方块热图
+library(ComplexHeatmap)
+DefaultAssay(Tcell) <- "ViperTF"#RNA
+features=c("TCF7", "LEF1", "BACH2", "ETS1", "FOXP1", "BCL11B", "HMGA1",
+           "ENO1","XBP1","LITAF","TBX21","HMGB2","DRAP1",
+             "RUNX3","EOMES","RORA","KLF6", "ZEB2",'CNBP')
+gene_cell_exp1 <- AverageExpression(Tcell,
+                                   features = features,
+                                   group.by = 'condition',
+                                   slot = 'data') 
+gene_cell_exp <- as.data.frame(gene_cell_exp1$ViperTF)#RNA ViperTF
+df <- data.frame(colnames(gene_cell_exp))
+colnames(df) <- 'Group'
+top_anno = HeatmapAnnotation(df = df,#细胞名/clusTcellr
+                             border = T,
+                             show_annotation_name = F,
+                             gp = gpar(col = 'black'),
+                             gap = unit(5, "points"),
+                             col = list(class = c("HD"="#0070c0","HSCT-0"='#7030a0',
+                                                  "HSCT-1"='#ff5050',"HSCT-3"='#f78832',"HSCT-6"='#70ad47')))#
+marker_exp <- t(scale(t(gene_cell_exp),scale = T,center = T))
+Heatmap(marker_exp,
+        cluster_rows = F,
+        cluster_columns = F,
+        show_column_names = F,
+        show_row_names = T,
+        column_title = 'TF activity',
+        column_title_gp = gpar(fontsize = 11), 
+        heatmap_legend_param = list(
+        title=''),#  Gene expression level TF activity
+        col = colorRampPalette(c("#4865A9","#F3E1BD","#EF8A43"))(50), #
+        border = 'white',#"navy","#E6E3A5","#E5E512" "#4865A9","#F3E1BD","#EF8A43" 
+        rect_gp = gpar(col = "white", lwd = 1),
+        row_names_gp = gpar(fontsize = 9),
+        column_names_gp = gpar(fontsize = 3),
+        top_annotation = top_anno,
+        row_title_side = "right")
+#基因气泡图
+DefaultAssay(Tcell) <- "RNA"#
+DotPlot(Tcell,features = features,cols = c('#A7A3B2','#2F0B95'),group.by = 'Celltype')+coord_flip()+
+  theme(axis.text.y = element_text(size = 10))+#labs(x = "TF activity")+
+  theme(axis.text.x = element_text(size=10,angle=60,vjust = 0.9,hjust = 0.9),
+        legend.title= element_text(size = 10))
+
+#基因表达小提琴图
+features <-c("TCF7", "LEF1", "BACH2", "ETS1", "FOXP1", "BCL11B", "HMGA1",
+             "ENO1","XBP1","LITAF","TBX21","HMGB2","DRAP1",
+             "RUNX3","EOMES","RORA","KLF6", "ZEB2",'CNBP')
+expr = t(as.matrix(Tex@assays$RNA@counts[features,]))
+posi= match(rownames(expr),rownames(Tex@meta.data))
+ts = cbind(expr,Tex@meta.data[posi,c("Celltype",'condition','condition1','orig.ident')])
+head(ts)
+source("/data5/tiany/Code/functions/Function_for_violin_plot.R")
+# 计算 误差线，这里用步骤三加载的函数，计算一下误差信息,只能算一个
+ggplot(ts, aes(x =condition, y = DRAP1, fill = condition)) +
+  geom_violin(scale = "width",alpha=0.8,width=0.9,size=0.8)+
+  # 绘制箱线图
+  geom_boxplot(width = 0.25, outlier.shape = NA, alpha = 1) +
+  # 绘制置信区间
+  #geom_errorbar(stat = "summary", fun.data = "median_hilow", width = 0.1, color = "black") +
+  # 设置图例
+  labs(x = "", y = "Gene Expression Level", fill = "Group") +ggtitle("DRAP1") +
+  scale_fill_manual(values = c("#0070c0",'#7030a0',
+                               '#ff5050','#f78832','#70ad47'))+#'#EB8ABA','#9584C1'
+  # 主题设置
+  theme_minimal()+
+  theme(axis.text = element_text(size = 10,color = "black"),
+        panel.grid.major = element_blank(),  # 去掉主要网格线
+        panel.grid.minor = element_blank(),  # 去掉次要网格线
+        axis.line = element_line(size = 0.6, color = "black"),  # 添加轴线
+        axis.ticks = element_line(size = 0.6),  # 添加刻度线
+        axis.text.x = element_text(angle = 90,vjust = 0.5, hjust = 1),  # 调整 x 轴文本角度和位置
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)# 去掉面板背景
+  )
++stat_compare_means(aes(group=condition),
+                       method = "t.test",
+                       label = "p.signif",
+                       label.y = 5.5, size=4.5)
+
+#非填充色
+ggplot(ts, aes(x = condition, y = DRAP1)) +
+  # 绘制小提琴图，设置边框颜色
+  geom_violin(scale = "width", alpha = 0, aes(color = condition), width = 0.9, size = 0.8) + 
+  # 绘制箱线图，边框颜色与小提琴图一致
+  geom_boxplot(aes(color = condition), width = 0.25, outlier.shape = NA, fill = NA, alpha = 1) +
+  # 设置图例
+  labs(x = "", y = "Gene Expression Level", fill = "Group") + 
+  ggtitle("DRAP1") +
+  scale_color_manual(values = c("#0070c0", '#7030a0', '#ff5050', '#f78832', '#70ad47')) +  # 设置边框颜色
+  # 设置 y 轴范围
+  ylim(0, 8) +
+  # 主题设置
+  theme_minimal() +
+  theme(axis.text = element_text(size = 10, color = "black"),
+        panel.grid.major = element_blank(),  # 去掉主要网格线
+        panel.grid.minor = element_blank(),  # 去掉次要网格线
+        axis.line = element_line(size = 0.6, color = "black"),  # 添加轴线
+        axis.ticks = element_line(size = 0.6),  # 添加刻度线
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),  # 调整 x 轴文本角度和位置
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)  # 去掉面板背景
+  )
+
+clonalOverlap(Tcell,split.by = "Celltype",
+              cloneCall="CTaa", method="overlap"#overlap raw
+)+ scale_fill_gradient(low = "#0269DD", high = "#F43A3A", na.value = "white")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5))+
+  ggtitle("Single")+
+  theme(plot.title = element_text(hjust = 0.5))+ggtitle("Patient8 MUD-HSCT") +  # 修改这里以添加您的标题
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+#提取其中1/3的细胞
+
+
+pheatmap(gsva.kegg[data$X,], show_colnames = T, 
+         cluster_row = F,cluster_col = F,#分别不对行列进行排序
+         scale = "row",angle_col = "270", 
+         fontsize_row = 8,fontsize_col = 10,border_color = "white",
+         color = colorRampPalette(c("navy", "white", "firebrick3"))(50))
+         
+

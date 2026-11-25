@@ -1,0 +1,9 @@
+method	celltype	rho	rank
+Centered HVG, markers excluded	CD8 eff. 2	0.779491335869096	1
+Centered HVG, markers excluded	CD8 eff. 1	0.6910128336945	2
+Centered HVG, markers excluded	CD8 mem. 3	0.455710533746916	3
+Centered HVG, markers excluded	CD8 mem. 2	0.0584895867074877	4
+Centered HVG, markers excluded	CD8 mem. 1	-0.321726939847501	5
+Centered HVG, markers excluded	CD8 IFN	-0.342658992218819	6
+Centered HVG, markers excluded	CD8 hobit	-0.371448633140088	7
+Centered HVG, markers excluded	CD8 NV	-0.490312502615373	8

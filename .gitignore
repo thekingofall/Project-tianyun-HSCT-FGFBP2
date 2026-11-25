@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.Rhistory
+.RData
+.Rproj.user/
+local_config.*
+.env

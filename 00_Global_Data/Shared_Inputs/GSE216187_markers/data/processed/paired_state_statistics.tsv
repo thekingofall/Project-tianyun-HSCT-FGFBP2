@@ -1,0 +1,10 @@
+scope	program	n_pairs	mean_detected	mean_not_detected	difference	P	test
+CD8_all	Cytotoxicity	6	0.672738559778905	0.415917215945619	0.256821343833287	0.000396792609137243	Two-sided paired t-test on patient summaries
+CD8_all	Exhaustion	6	0.0372384137439304	0.0315638614612323	0.00567455228269812	0.0986202210529618	Two-sided paired t-test on patient summaries
+CD8_all	Naive_memory	6	0.101574259363126	0.235168571572543	-0.133594312209417	0.000897060896735611	Two-sided paired t-test on patient summaries
+CD8_EM	Cytotoxicity	6	0.676048889400889	0.477116851722784	0.198932037678105	0.000490934761255424	Two-sided paired t-test on patient summaries
+CD8_EM	Exhaustion	6	0.037255660820174	0.035663327856251	0.00159233296392292	0.578438922062279	Two-sided paired t-test on patient summaries
+CD8_EM	Naive_memory	6	0.0993458672569671	0.18969492984952	-0.0903490625925531	0.00765484119073749	Two-sided paired t-test on patient summaries
+CD8_effector	Cytotoxicity	6	0.7685761505539	0.710998442329798	0.057577708224102	0.130764927812405	Two-sided paired t-test on patient summaries
+CD8_effector	Exhaustion	6	0.0351737736932999	0.0351813359891221	-7.56229582225126e-06	0.998957461673596	Two-sided paired t-test on patient summaries
+CD8_effector	Naive_memory	6	0.0670452920700152	0.114732794889945	-0.0476875028199302	0.171004387361756	Two-sided paired t-test on patient summaries

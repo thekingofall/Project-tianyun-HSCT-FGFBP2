@@ -1,0 +1,25 @@
+palette_id	order	group	label	display_label	hex
+Celltype	1	Celltype	CD8 NV	CD8 NV	#DEC4DF
+Celltype	2	Celltype	CD8 hobit	CD8 hobit	#D9A8CD
+Celltype	3	Celltype	CD8 mem. 1	CD8 mem. 1	#EA8BB9
+Celltype	4	Celltype	CD8 mem. 2	CD8 mem. 2	#CCE7F0
+Celltype	5	Celltype	CD8 mem. 3	CD8 mem. 3	#ADD4E5
+Celltype	6	Celltype	CD8 eff. 1	CD8 eff. 1	#8EC5DE
+Celltype	7	Celltype	CD8 eff. 2	CD8 eff. 2	#8AAAD1
+Celltype	8	Celltype	CD8 IFN	CD8 IFN	#968AC2
+Celltype	9	Celltype	CD4 NV	CD4 NV	#FCD6C9
+Celltype	10	Celltype	CD4 mem.	CD4 mem.	#F7977B
+Celltype	11	Celltype	Th17	Th17	#F15A36
+Celltype	12	Celltype	Treg	Treg	#EA1C23
+Celltype	13	Celltype	CD4 IFN	CD4 IFN	#950C18
+Celltype	14	Celltype	gdT	γδT	#9B6FB0
+Celltype	15	Celltype	MAIT	MAIT	#6F1066
+Celltype	16	Celltype	MLP	MLP	#008C84
+Celltype	17	Celltype	MEP	MEP	#0A92D2
+Celltype	18	Celltype	NP	NP	#00B2E1
+Celltype	19	Celltype	MDP	MDP	#40C5E4
+Celltype	20	Celltype	pDCs	pDCs	#7BD1E8
+Celltype	21	Celltype	cDCs	cDCs	#57C1A3
+Celltype	22	Celltype	preB	preB	#00A893
+Celltype	23	Celltype	pro/pre T	pro/pre T	#00B099
+Celltype	24	Celltype	MP/mono	MP/mono	#00AD89

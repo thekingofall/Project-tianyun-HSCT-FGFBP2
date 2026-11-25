@@ -1,0 +1,53 @@
+suppressPackageStartupMessages({library(Seurat);library(Matrix);library(data.table);library(jsonlite)})
+setwd('/data5/tiany/GSE222633/GSE222633_CD8_annotation_v20261029_132636')
+stopifnot(!file.exists('logs/14_refine_CD8.log'))
+logfile<-file('logs/14_refine_CD8.log','wt');sink(logfile,split=TRUE);sink(logfile,type='message')
+tryCatch({
+stopifnot(ncol(FCD8_work)==53538L)
+FCD8_work$CD8_cluster_initial<-FCD8_work$CD8_cluster
+base_clusters<-as.character(FCD8_work$CD8_cluster_initial)
+refined_clusters<-base_clusters
+for(k in c('4','6','7')){
+  Idents(FCD8_work)<-base_clusters
+  nm<-paste0('CD8_subcluster_',k)
+  FCD8_work<-FindSubCluster(FCD8_work,cluster=k,graph.name='CD8_snn',subcluster.name=nm,resolution=.4,algorithm=1)
+  take<-base_clusters==k
+  refined_clusters[take]<-as.character(FCD8_work@meta.data[[nm]][take])
+}
+FCD8_work$CD8_cluster<-refined_clusters
+Idents(FCD8_work)<-refined_clusters
+cat('REFINED_CLUSTER_COUNTS\n');print(table(refined_clusters));flush(logfile)
+md<-as.data.table(FCD8_work@meta.data,keep.rownames='cell')
+md[,MAIT_TCR_support:=grepl('TRAV1-2',TCR_v_gene_TRA) & grepl('TRAJ(33|12|20)([^0-9]|$)',TCR_j_gene_TRA)]
+quality<-md[,.(cells=.N,median_nFeature_RNA=median(nFeature_RNA),median_nCount_RNA=median(nCount_RNA),median_percent_mt=median(percent.mt),
+ strict_TCR_percent=100*mean(TCR_unambiguous_TRA_TRB%in%TRUE),gamma_delta_paired_percent=100*mean(TCR_paired_TRG_TRD%in%TRUE),
+ MAIT_TCR_percent=100*mean(MAIT_TCR_support%in%TRUE)),by=CD8_cluster]
+fwrite(quality,'data/processed/CD8_refined_cluster_quality_TCR.tsv',sep='\t')
+scorecols<-grep('^score_',names(md),value=TRUE)
+fwrite(md[,lapply(.SD,mean),by=CD8_cluster,.SDcols=scorecols],'data/processed/CD8_refined_program_scores.tsv',sep='\t')
+groups<-unique(refined_clusters);ci<-match(refined_clusters,groups);ns<-tabulate(ci,nbins=length(groups))
+W<-sparseMatrix(i=seq_along(ci),j=ci,x=1/ns[ci],dims=c(length(ci),length(groups)))
+x<-GetAssayData(FCD8_work,assay='RNA',slot='data')
+sets<-fread('resources/annotation_gene_sets.tsv')
+panel<-unique(c(sets$gene,'CD8A','CD8B','CD4','CD74','HLA-DRA','HLA-DRB1','CD38','TNFRSF9','NR4A1','NR4A2','FOS','JUN','BCL2','GZMA','GZMM','KLRD1','GZMK','S100A4','S100A6','MS4A1','CD79A','LYZ','LST1','PPBP','HBB','TRGV9','TRDV2'))
+panel<-intersect(panel,rownames(x));lin<-x[panel,,drop=FALSE];lin@x<-expm1(lin@x)
+avg<-log1p(as.matrix(lin%*%W));colnames(avg)<-groups
+pct<-100*as.matrix((lin>0)%*%W);colnames(pct)<-groups
+aa<-as.data.table(as.table(avg));setnames(aa,c('gene','CD8_cluster','expression'))
+pp<-as.data.table(as.table(pct));setnames(pp,c('gene','CD8_cluster','percent_detected'))
+fwrite(merge(aa,pp,by=c('gene','CD8_cluster')),'data/plot_ready/CD8_refined_marker_panel.tsv',sep='\t')
+am<-as.matrix(GetAssayData(FCD8_work,assay='ADT',slot='data')%*%W);colnames(am)<-groups
+ad<-as.data.table(as.table(am));setnames(ad,c('protein','CD8_cluster','ADT_CLR'))
+fwrite(ad,'data/processed/CD8_refined_ADT_profiles.tsv',sep='\t')
+fwrite(md[,.(cells=.N),by=.(CD8_cluster,sample,pair_id,role,timepoint)],'data/processed/CD8_refined_sample_counts.tsv',sep='\t')
+cat('REFINED_ANNOTATION_PROFILES_READY\n');flush(logfile)
+CD8_markers_final_work<-FindAllMarkers(FCD8_work,assay='RNA',slot='data',only.pos=TRUE,min.pct=.1,logfc.threshold=.25,
+ test.use='wilcox',max.cells.per.ident=1500,random.seed=222633,return.thresh=.05,verbose=TRUE)
+fwrite(as.data.table(CD8_markers_final_work),'data/processed/CD8_FindAllMarkers_refined.csv')
+fwrite(as.data.table(CD8_markers_final_work)[order(cluster,-avg_log2FC),head(.SD,25),by=cluster],
+ 'data/processed/CD8_refined_top25_markers.tsv',sep='\t')
+write_json(list(status='refined_markers_ready',cells=ncol(FCD8_work),clusters=length(groups),marker_rows=nrow(CD8_markers_final_work)),
+ 'reports/refined_recluster_audit.json',pretty=TRUE,auto_unbox=TRUE)
+cat('REFINED_MARKERS_READY ',format(Sys.time()),'\n');flush(logfile)
+},error=function(e){cat('REFINE_ERROR ',conditionMessage(e),'\n');flush(logfile)})
+sink(type='message');sink();close(logfile)

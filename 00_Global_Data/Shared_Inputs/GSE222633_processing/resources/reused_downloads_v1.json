@@ -1,0 +1,38 @@
+{
+  "GSE222633_D10postPBMC_filtered_contigs.csv.gz": {
+    "filename": "GSE222633_D10postPBMC_filtered_contigs.csv.gz",
+    "path": "data/raw/retry_1/GSE222633_D10postPBMC_filtered_contigs.csv.gz",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE222nnn/GSE222633/suppl/GSE222633_D10postPBMC_filtered_contigs.csv.gz",
+    "bytes": 1068381,
+    "http_expected_bytes": 1068381,
+    "sha256": "b22804de4724104c4092f27dd2fd35089560c5f45b51a627d227438118606629",
+    "md5": "cbad849705d77f256faa09c6719eeae0",
+    "seconds": 142.8,
+    "status": "complete",
+    "utc": "2026-10-26T14:35:19Z"
+  },
+  "GSE222633_D10prePBMC_filtered_contigs.csv.gz": {
+    "filename": "GSE222633_D10prePBMC_filtered_contigs.csv.gz",
+    "path": "data/raw/retry_1/GSE222633_D10prePBMC_filtered_contigs.csv.gz",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE222nnn/GSE222633/suppl/GSE222633_D10prePBMC_filtered_contigs.csv.gz",
+    "bytes": 1491745,
+    "http_expected_bytes": 1491745,
+    "sha256": "a3cbe03958c25ffc38bfbad6cc451af5eb8713933f0f4287c0422b6131c564f6",
+    "md5": "6788afee44c1635def921baf93ab908f",
+    "seconds": 104.5,
+    "status": "complete",
+    "utc": "2026-10-26T14:37:16Z"
+  },
+  "GSE222633_D16postPBMC_filtered_contigs.csv.gz": {
+    "filename": "GSE222633_D16postPBMC_filtered_contigs.csv.gz",
+    "path": "data/raw/GSE222633_D16postPBMC_filtered_contigs.csv.gz",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE222nnn/GSE222633/suppl/GSE222633_D16postPBMC_filtered_contigs.csv.gz",
+    "bytes": 642133,
+    "http_expected_bytes": 642133,
+    "sha256": "4cf8053e4a2ca11896e2392d9b907e736be5f39175a8cff45b0bf0135d5b3bda",
+    "md5": "1f2e858d0bd2a02ee9d5c90812d7d07a",
+    "seconds": 127.1,
+    "status": "complete",
+    "utc": "2026-10-26T14:39:23Z"
+  }
+}

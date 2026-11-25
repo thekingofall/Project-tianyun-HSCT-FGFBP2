@@ -1,0 +1,109 @@
+scope	orig	group	FGFBP2_status	program	n_cells	mean_score
+CD8_all	CR1	CR	Not detected	Cytotoxicity	647	0.441778464708913
+CD8_all	CR1	CR	Not detected	Exhaustion	647	0.0299217542503864
+CD8_all	CR1	CR	Not detected	Naive_memory	647	0.196795723853684
+CD8_all	CR1	CR	Detected	Cytotoxicity	710	0.6503720657277
+CD8_all	CR1	CR	Detected	Exhaustion	710	0.0366994131455399
+CD8_all	CR1	CR	Detected	Naive_memory	710	0.0864628325508607
+CD8_all	CR2	CR	Not detected	Cytotoxicity	108	0.506792052469136
+CD8_all	CR2	CR	Not detected	Exhaustion	108	0.0246288580246914
+CD8_all	CR2	CR	Not detected	Naive_memory	108	0.13213683127572
+CD8_all	CR2	CR	Detected	Cytotoxicity	222	0.812308746246246
+CD8_all	CR2	CR	Detected	Exhaustion	222	0.0250168918918919
+CD8_all	CR2	CR	Detected	Naive_memory	222	0.0578043043043043
+CD8_all	CR3	CR	Not detected	Cytotoxicity	244	0.46705037568306
+CD8_all	CR3	CR	Not detected	Exhaustion	244	0.037047643442623
+CD8_all	CR3	CR	Not detected	Naive_memory	244	0.208732468123862
+CD8_all	CR3	CR	Detected	Cytotoxicity	231	0.646039141414141
+CD8_all	CR3	CR	Detected	Exhaustion	231	0.0329134199134199
+CD8_all	CR3	CR	Detected	Naive_memory	231	0.094465367965368
+CD8_all	REL1	REL	Not detected	Cytotoxicity	315	0.347041402116402
+CD8_all	REL1	REL	Not detected	Exhaustion	315	0.0255690476190476
+CD8_all	REL1	REL	Not detected	Naive_memory	315	0.327759435626102
+CD8_all	REL1	REL	Detected	Cytotoxicity	42	0.706580357142857
+CD8_all	REL1	REL	Detected	Exhaustion	42	0.0367728174603175
+CD8_all	REL1	REL	Detected	Naive_memory	42	0.116117724867725
+CD8_all	REL2	REL	Not detected	Cytotoxicity	827	0.357212212817412
+CD8_all	REL2	REL	Not detected	Exhaustion	827	0.0297522168480451
+CD8_all	REL2	REL	Not detected	Naive_memory	827	0.29248978906355
+CD8_all	REL2	REL	Detected	Cytotoxicity	241	0.544063796680498
+CD8_all	REL2	REL	Detected	Exhaustion	241	0.0443272821576764
+CD8_all	REL2	REL	Detected	Naive_memory	241	0.150396496081143
+CD8_all	REL3	REL	Not detected	Cytotoxicity	682	0.375628787878788
+CD8_all	REL3	REL	Not detected	Exhaustion	682	0.0424636485826002
+CD8_all	REL3	REL	Not detected	Naive_memory	682	0.253097181492343
+CD8_all	REL3	REL	Detected	Cytotoxicity	228	0.677067251461988
+CD8_all	REL3	REL	Detected	Exhaustion	228	0.0477006578947368
+CD8_all	REL3	REL	Detected	Naive_memory	228	0.104198830409357
+CD8_EM	CR1	CR	Not detected	Cytotoxicity	602	0.4625676910299
+CD8_EM	CR1	CR	Not detected	Exhaustion	602	0.0305168189368771
+CD8_EM	CR1	CR	Not detected	Naive_memory	602	0.187137412329273
+CD8_EM	CR1	CR	Detected	Cytotoxicity	708	0.650856756120527
+CD8_EM	CR1	CR	Detected	Exhaustion	708	0.036719868173258
+CD8_EM	CR1	CR	Detected	Naive_memory	708	0.0864981167608286
+CD8_EM	CR2	CR	Not detected	Cytotoxicity	92	0.584408061594203
+CD8_EM	CR2	CR	Not detected	Exhaustion	92	0.0289121376811594
+CD8_EM	CR2	CR	Not detected	Naive_memory	92	0.0633285024154589
+CD8_EM	CR2	CR	Detected	Cytotoxicity	222	0.812308746246246
+CD8_EM	CR2	CR	Detected	Exhaustion	222	0.0250168918918919
+CD8_EM	CR2	CR	Detected	Naive_memory	222	0.0578043043043043
+CD8_EM	CR3	CR	Not detected	Cytotoxicity	223	0.498905642750374
+CD8_EM	CR3	CR	Not detected	Exhaustion	223	0.0388464125560538
+CD8_EM	CR3	CR	Not detected	Naive_memory	223	0.176849526656702
+CD8_EM	CR3	CR	Detected	Cytotoxicity	231	0.646039141414141
+CD8_EM	CR3	CR	Detected	Exhaustion	231	0.0329134199134199
+CD8_EM	CR3	CR	Detected	Naive_memory	231	0.094465367965368
+CD8_EM	REL1	REL	Not detected	Cytotoxicity	239	0.42794630404463
+CD8_EM	REL1	REL	Not detected	Exhaustion	239	0.0301603905160391
+CD8_EM	REL1	REL	Not detected	Naive_memory	239	0.274120874012087
+CD8_EM	REL1	REL	Detected	Cytotoxicity	41	0.71672662601626
+CD8_EM	REL1	REL	Detected	Exhaustion	41	0.0376697154471545
+CD8_EM	REL1	REL	Detected	Naive_memory	41	0.107635501355014
+CD8_EM	REL2	REL	Not detected	Cytotoxicity	573	0.429327152414194
+CD8_EM	REL2	REL	Not detected	Exhaustion	573	0.0349679319371728
+CD8_EM	REL2	REL	Not detected	Naive_memory	573	0.243196528989723
+CD8_EM	REL2	REL	Detected	Cytotoxicity	234	0.548977207977208
+CD8_EM	REL2	REL	Detected	Exhaustion	234	0.0437006766381766
+CD8_EM	REL2	REL	Detected	Naive_memory	234	0.14724358974359
+CD8_EM	REL3	REL	Not detected	Cytotoxicity	490	0.459546258503401
+CD8_EM	REL3	REL	Not detected	Exhaustion	490	0.0505762755102041
+CD8_EM	REL3	REL	Not detected	Naive_memory	490	0.193536734693878
+CD8_EM	REL3	REL	Detected	Cytotoxicity	224	0.681384858630952
+CD8_EM	REL3	REL	Detected	Exhaustion	224	0.0475133928571429
+CD8_EM	REL3	REL	Detected	Naive_memory	224	0.102428323412698
+CD8_effector	CR1	CR	Not detected	Cytotoxicity	50	0.699915
+CD8_effector	CR1	CR	Not detected	Exhaustion	50	0.038115
+CD8_effector	CR1	CR	Not detected	Naive_memory	50	0.0849777777777778
+CD8_effector	CR1	CR	Detected	Cytotoxicity	392	0.716638605442177
+CD8_effector	CR1	CR	Detected	Exhaustion	392	0.0326307397959184
+CD8_effector	CR1	CR	Detected	Naive_memory	392	0.0663306405895692
+CD8_effector	CR2	CR	Not detected	Cytotoxicity	24	0.852184027777778
+CD8_effector	CR2	CR	Not detected	Exhaustion	24	0.0387291666666667
+CD8_effector	CR2	CR	Not detected	Naive_memory	24	0.0324675925925926
+CD8_effector	CR2	CR	Detected	Cytotoxicity	205	0.833140853658537
+CD8_effector	CR2	CR	Detected	Exhaustion	205	0.0259032520325203
+CD8_effector	CR2	CR	Detected	Naive_memory	205	0.0556235772357724
+CD8_effector	CR3	CR	Not detected	Cytotoxicity	23	0.741717391304348
+CD8_effector	CR3	CR	Not detected	Exhaustion	23	0.027195652173913
+CD8_effector	CR3	CR	Not detected	Naive_memory	23	0.111234299516908
+CD8_effector	CR3	CR	Detected	Cytotoxicity	103	0.741680825242719
+CD8_effector	CR3	CR	Detected	Exhaustion	103	0.0241731391585761
+CD8_effector	CR3	CR	Detected	Naive_memory	103	0.0591175836030205
+CD8_effector	REL1	REL	Not detected	Cytotoxicity	17	0.65553431372549
+CD8_effector	REL1	REL	Not detected	Exhaustion	17	0.0417622549019608
+CD8_effector	REL1	REL	Not detected	Naive_memory	17	0.0963627450980392
+CD8_effector	REL1	REL	Detected	Cytotoxicity	27	0.807878086419753
+CD8_effector	REL1	REL	Detected	Exhaustion	27	0.0325077160493827
+CD8_effector	REL1	REL	Detected	Naive_memory	27	0.0662901234567901
+CD8_effector	REL2	REL	Not detected	Cytotoxicity	12	0.56446875
+CD8_effector	REL2	REL	Not detected	Exhaustion	12	0.0253298611111111
+CD8_effector	REL2	REL	Not detected	Naive_memory	12	0.283722222222222
+CD8_effector	REL2	REL	Detected	Cytotoxicity	38	0.723163377192982
+CD8_effector	REL2	REL	Detected	Exhaustion	38	0.0493782894736842
+CD8_effector	REL2	REL	Detected	Naive_memory	38	0.0954093567251462
+CD8_effector	REL3	REL	Not detected	Cytotoxicity	37	0.752171171171171
+CD8_effector	REL3	REL	Not detected	Exhaustion	37	0.0399560810810811
+CD8_effector	REL3	REL	Not detected	Naive_memory	37	0.0796321321321321
+CD8_effector	REL3	REL	Detected	Cytotoxicity	118	0.788955155367232
+CD8_effector	REL3	REL	Detected	Exhaustion	118	0.0464495056497175
+CD8_effector	REL3	REL	Detected	Naive_memory	118	0.0595004708097928

@@ -1,0 +1,15 @@
+{
+  "target": "HSCT Celltype2 == S2_CD8_Teff",
+  "query": "GSE216187 all eight Celltype labels starting CD8",
+  "RNA": "Both datasets normalized independently from RNA counts to 10000 counts per cell; no integrated or SCT residual matrix correlation",
+  "aggregation": "sample x subtype with >=10 cells: log1p(mean normalized counts); equal samples within subject; equal subjects within subtype",
+  "subject_HSCT": "orig.ident with trailing A/C/D removed, preserving GZ healthy donors distinct from YZ recipients",
+  "subject_external": "patient_id, original genotype identity; orig aliases are presentation only",
+  "reference_states": "Celltype2 starting S1/S2/S3_CD8_ with >=100 cells and >=1 eligible subject",
+  "features": "intersection of each dataset CD8 top2000 vst variable features, shared measured genes, excluding mitochondrial/ribosomal/receptor-variable/sex-linked nuisance genes; union top2000 retained as sensitivity",
+  "primary": "Spearman correlation of within-dataset gene-centered, equal-subject subtype profiles, excluding FGFBP2 and ADGRG1",
+  "sensitivity": ["un-centered expression correlation", "include FGFBP2 and ADGRG1", "shared union HVG", "pooled-cell subtype expression", "leave one HSCT subject and one external subject out"],
+  "S2_signature": "top100 positive and top100 negative S2-vs-other-reference-subtypes balanced log expression contrasts, markers excluded; UCell up minus down using full shared gene universe, subject-level summaries",
+  "claim_boundary": "transcriptomic state correspondence; does not determine leukemia antigen specificity or demonstrate GVL function",
+  "seed": 216187
+}

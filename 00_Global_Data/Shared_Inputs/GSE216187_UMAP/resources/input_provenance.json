@@ -1,0 +1,6 @@
+{
+  "plot_data": "../GSE216187_annotation_v20261027_195934/data/plot_ready/UMAP_orig_Celltype.tsv.gz",
+  "object": "/data5/tiany/GSE216187/GSE216187_seurat_scRNA_SCT_orig_Celltype_v20261027.rds",
+  "reference_image": "D:/我的坚果云/Codex/开发/codex-supermobile/data/uploads/84aa569f-765c-4f3a-acd8-3283d31ba99f/file-QQ_1793104893677.png",
+  "transformation": "Layout and labels only; all cell coordinates and labels retained"
+}

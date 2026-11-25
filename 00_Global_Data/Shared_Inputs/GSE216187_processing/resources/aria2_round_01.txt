@@ -1,0 +1,24 @@
+https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660161/suppl/GSM6660161_REL_barcodes_updated.tsv.gz
+  dir=/data5/tiany/GSE216187/GSE216187_v20261027_070000/data/raw
+  out=GSM6660161_REL_barcodes_updated.tsv.gz
+https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660161/suppl/GSM6660161_REL_donors.tsv.gz
+  dir=/data5/tiany/GSE216187/GSE216187_v20261027_070000/data/raw
+  out=GSM6660161_REL_donors.tsv.gz
+https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660161/suppl/GSM6660161_REL_features.tsv.gz
+  dir=/data5/tiany/GSE216187/GSE216187_v20261027_070000/data/raw
+  out=GSM6660161_REL_features.tsv.gz
+https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660161/suppl/GSM6660161_REL_matrix.mtx.gz
+  dir=/data5/tiany/GSE216187/GSE216187_v20261027_070000/data/raw
+  out=GSM6660161_REL_matrix.mtx.gz
+https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660162/suppl/GSM6660162_CR_barcodes.tsv.gz
+  dir=/data5/tiany/GSE216187/GSE216187_v20261027_070000/data/raw
+  out=GSM6660162_CR_barcodes.tsv.gz
+https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660162/suppl/GSM6660162_CR_donors.tsv.gz
+  dir=/data5/tiany/GSE216187/GSE216187_v20261027_070000/data/raw
+  out=GSM6660162_CR_donors.tsv.gz
+https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660162/suppl/GSM6660162_CR_features.tsv.gz
+  dir=/data5/tiany/GSE216187/GSE216187_v20261027_070000/data/raw
+  out=GSM6660162_CR_features.tsv.gz
+https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660162/suppl/GSM6660162_CR_matrix.mtx.gz
+  dir=/data5/tiany/GSE216187/GSE216187_v20261027_070000/data/raw
+  out=GSM6660162_CR_matrix.mtx.gz

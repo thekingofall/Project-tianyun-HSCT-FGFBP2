@@ -1,0 +1,4 @@
+{
+  "harmony_by_patient": false,
+  "method": "Paper-style SCT PCA/UMAP; preserve CR/REL difference because pool and condition overlap"
+}

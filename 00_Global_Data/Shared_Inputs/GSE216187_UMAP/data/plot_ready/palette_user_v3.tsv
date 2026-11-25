@@ -1,0 +1,25 @@
+Celltype	hex
+CD8 NV	#DFC4DE
+CD8 hobit	#b092b2
+CD8 mem. 1	#d475a8
+CD8 mem. 2	#a8c5db
+CD8 mem. 3	#7eb5d6
+CD8 eff. 1	#569ecf
+CD8 eff. 2	#3d7ab8
+CD8 IFN	#6b429e
+CD4 NV	#e38888
+CD4 mem.	#e36442
+Th17	#d9382b
+Treg	#a81c1c
+CD4 IFN	#7a1122
+γδT	#8b52a3
+MAIT	#5c2d82
+MLP	#1f8a8a
+MEP	#229eab
+NP	#3bc4be
+MDP	#42b883
+pDCs	#7bc993
+cDCs	#4db86e
+preB	#2e9e52
+pro/pre T	#1b7d3a
+MP/mono	#115c27

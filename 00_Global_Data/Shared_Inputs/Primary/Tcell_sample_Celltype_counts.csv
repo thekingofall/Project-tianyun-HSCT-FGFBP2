@@ -1,0 +1,346 @@
+"sample","label","Freq"
+"GZ5","CD4 Naive",311
+"YZ5","CD4 Naive",1190
+"YZ5A","CD4 Naive",53
+"YZ5C","CD4 Naive",487
+"YZ5D","CD4 Naive",365
+"GZ6","CD4 Naive",1594
+"YZ6","CD4 Naive",748
+"YZ6A","CD4 Naive",128
+"YZ6C","CD4 Naive",106
+"YZ6D","CD4 Naive",173
+"GZ7","CD4 Naive",568
+"YZ7","CD4 Naive",832
+"YZ7A","CD4 Naive",2
+"YZ7C","CD4 Naive",12
+"YZ7D","CD4 Naive",78
+"GZ8","CD4 Naive",1635
+"YZ8","CD4 Naive",877
+"YZ8A","CD4 Naive",78
+"YZ8C","CD4 Naive",25
+"YZ8D","CD4 Naive",184
+"GZ9","CD4 Naive",595
+"YZ9","CD4 Naive",723
+"YZ9A","CD4 Naive",8
+"GZ5","CD4 Tscm",192
+"YZ5","CD4 Tscm",310
+"YZ5A","CD4 Tscm",104
+"YZ5C","CD4 Tscm",417
+"YZ5D","CD4 Tscm",315
+"GZ6","CD4 Tscm",536
+"YZ6","CD4 Tscm",261
+"YZ6A","CD4 Tscm",100
+"YZ6C","CD4 Tscm",81
+"YZ6D","CD4 Tscm",130
+"GZ7","CD4 Tscm",309
+"YZ7","CD4 Tscm",379
+"YZ7A","CD4 Tscm",5
+"YZ7C","CD4 Tscm",18
+"YZ7D","CD4 Tscm",76
+"GZ8","CD4 Tscm",557
+"YZ8","CD4 Tscm",247
+"YZ8A","CD4 Tscm",125
+"YZ8C","CD4 Tscm",45
+"YZ8D","CD4 Tscm",79
+"GZ9","CD4 Tscm",305
+"YZ9","CD4 Tscm",371
+"YZ9A","CD4 Tscm",0
+"GZ5","CD4 Tcm",117
+"YZ5","CD4 Tcm",230
+"YZ5A","CD4 Tcm",72
+"YZ5C","CD4 Tcm",237
+"YZ5D","CD4 Tcm",148
+"GZ6","CD4 Tcm",263
+"YZ6","CD4 Tcm",186
+"YZ6A","CD4 Tcm",81
+"YZ6C","CD4 Tcm",53
+"YZ6D","CD4 Tcm",65
+"GZ7","CD4 Tcm",318
+"YZ7","CD4 Tcm",365
+"YZ7A","CD4 Tcm",5
+"YZ7C","CD4 Tcm",38
+"YZ7D","CD4 Tcm",66
+"GZ8","CD4 Tcm",378
+"YZ8","CD4 Tcm",169
+"YZ8A","CD4 Tcm",67
+"YZ8C","CD4 Tcm",17
+"YZ8D","CD4 Tcm",36
+"GZ9","CD4 Tcm",196
+"YZ9","CD4 Tcm",296
+"YZ9A","CD4 Tcm",0
+"GZ5","CD4 Tem",85
+"YZ5","CD4 Tem",151
+"YZ5A","CD4 Tem",76
+"YZ5C","CD4 Tem",327
+"YZ5D","CD4 Tem",171
+"GZ6","CD4 Tem",289
+"YZ6","CD4 Tem",130
+"YZ6A","CD4 Tem",234
+"YZ6C","CD4 Tem",163
+"YZ6D","CD4 Tem",297
+"GZ7","CD4 Tem",283
+"YZ7","CD4 Tem",308
+"YZ7A","CD4 Tem",6
+"YZ7C","CD4 Tem",20
+"YZ7D","CD4 Tem",79
+"GZ8","CD4 Tem",245
+"YZ8","CD4 Tem",121
+"YZ8A","CD4 Tem",129
+"YZ8C","CD4 Tem",28
+"YZ8D","CD4 Tem",43
+"GZ9","CD4 Tem",169
+"YZ9","CD4 Tem",228
+"YZ9A","CD4 Tem",0
+"GZ5","CD4 Teff",13
+"YZ5","CD4 Teff",42
+"YZ5A","CD4 Teff",6
+"YZ5C","CD4 Teff",229
+"YZ5D","CD4 Teff",52
+"GZ6","CD4 Teff",730
+"YZ6","CD4 Teff",44
+"YZ6A","CD4 Teff",1875
+"YZ6C","CD4 Teff",1551
+"YZ6D","CD4 Teff",2850
+"GZ7","CD4 Teff",73
+"YZ7","CD4 Teff",638
+"YZ7A","CD4 Teff",8
+"YZ7C","CD4 Teff",2
+"YZ7D","CD4 Teff",35
+"GZ8","CD4 Teff",105
+"YZ8","CD4 Teff",24
+"YZ8A","CD4 Teff",38
+"YZ8C","CD4 Teff",7
+"YZ8D","CD4 Teff",28
+"GZ9","CD4 Teff",112
+"YZ9","CD4 Teff",39
+"YZ9A","CD4 Teff",0
+"GZ5","CD4 Treg",58
+"YZ5","CD4 Treg",350
+"YZ5A","CD4 Treg",41
+"YZ5C","CD4 Treg",75
+"YZ5D","CD4 Treg",64
+"GZ6","CD4 Treg",148
+"YZ6","CD4 Treg",126
+"YZ6A","CD4 Treg",29
+"YZ6C","CD4 Treg",15
+"YZ6D","CD4 Treg",49
+"GZ7","CD4 Treg",109
+"YZ7","CD4 Treg",206
+"YZ7A","CD4 Treg",3
+"YZ7C","CD4 Treg",21
+"YZ7D","CD4 Treg",28
+"GZ8","CD4 Treg",143
+"YZ8","CD4 Treg",84
+"YZ8A","CD4 Treg",16
+"YZ8C","CD4 Treg",24
+"YZ8D","CD4 Treg",26
+"GZ9","CD4 Treg",138
+"YZ9","CD4 Treg",94
+"YZ9A","CD4 Treg",0
+"GZ5","CD8 Naive",145
+"YZ5","CD8 Naive",442
+"YZ5A","CD8 Naive",33
+"YZ5C","CD8 Naive",240
+"YZ5D","CD8 Naive",240
+"GZ6","CD8 Naive",1072
+"YZ6","CD8 Naive",483
+"YZ6A","CD8 Naive",70
+"YZ6C","CD8 Naive",67
+"YZ6D","CD8 Naive",62
+"GZ7","CD8 Naive",247
+"YZ7","CD8 Naive",98
+"YZ7A","CD8 Naive",2
+"YZ7C","CD8 Naive",10
+"YZ7D","CD8 Naive",40
+"GZ8","CD8 Naive",962
+"YZ8","CD8 Naive",96
+"YZ8A","CD8 Naive",24
+"YZ8C","CD8 Naive",6
+"YZ8D","CD8 Naive",39
+"GZ9","CD8 Naive",222
+"YZ9","CD8 Naive",346
+"YZ9A","CD8 Naive",0
+"GZ5","CD8 Tcm",100
+"YZ5","CD8 Tcm",115
+"YZ5A","CD8 Tcm",53
+"YZ5C","CD8 Tcm",403
+"YZ5D","CD8 Tcm",388
+"GZ6","CD8 Tcm",189
+"YZ6","CD8 Tcm",134
+"YZ6A","CD8 Tcm",59
+"YZ6C","CD8 Tcm",107
+"YZ6D","CD8 Tcm",150
+"GZ7","CD8 Tcm",126
+"YZ7","CD8 Tcm",118
+"YZ7A","CD8 Tcm",3
+"YZ7C","CD8 Tcm",22
+"YZ7D","CD8 Tcm",87
+"GZ8","CD8 Tcm",147
+"YZ8","CD8 Tcm",47
+"YZ8A","CD8 Tcm",58
+"YZ8C","CD8 Tcm",32
+"YZ8D","CD8 Tcm",25
+"GZ9","CD8 Tcm",109
+"YZ9","CD8 Tcm",117
+"YZ9A","CD8 Tcm",0
+"GZ5","CD8 Tem",64
+"YZ5","CD8 Tem",140
+"YZ5A","CD8 Tem",59
+"YZ5C","CD8 Tem",1002
+"YZ5D","CD8 Tem",523
+"GZ6","CD8 Tem",160
+"YZ6","CD8 Tem",137
+"YZ6A","CD8 Tem",180
+"YZ6C","CD8 Tem",218
+"YZ6D","CD8 Tem",402
+"GZ7","CD8 Tem",125
+"YZ7","CD8 Tem",191
+"YZ7A","CD8 Tem",14
+"YZ7C","CD8 Tem",20
+"YZ7D","CD8 Tem",233
+"GZ8","CD8 Tem",165
+"YZ8","CD8 Tem",232
+"YZ8A","CD8 Tem",102
+"YZ8C","CD8 Tem",43
+"YZ8D","CD8 Tem",71
+"GZ9","CD8 Tem",98
+"YZ9","CD8 Tem",201
+"YZ9A","CD8 Tem",0
+"GZ5","CD8 Teff",111
+"YZ5","CD8 Teff",223
+"YZ5A","CD8 Teff",77
+"YZ5C","CD8 Teff",2349
+"YZ5D","CD8 Teff",1290
+"GZ6","CD8 Teff",725
+"YZ6","CD8 Teff",294
+"YZ6A","CD8 Teff",445
+"YZ6C","CD8 Teff",756
+"YZ6D","CD8 Teff",1619
+"GZ7","CD8 Teff",224
+"YZ7","CD8 Teff",698
+"YZ7A","CD8 Teff",84
+"YZ7C","CD8 Teff",30
+"YZ7D","CD8 Teff",660
+"GZ8","CD8 Teff",527
+"YZ8","CD8 Teff",253
+"YZ8A","CD8 Teff",416
+"YZ8C","CD8 Teff",28
+"YZ8D","CD8 Teff",160
+"GZ9","CD8 Teff",245
+"YZ9","CD8 Teff",282
+"YZ9A","CD8 Teff",1
+"GZ5","CD8 Tex",38
+"YZ5","CD8 Tex",218
+"YZ5A","CD8 Tex",68
+"YZ5C","CD8 Tex",550
+"YZ5D","CD8 Tex",298
+"GZ6","CD8 Tex",111
+"YZ6","CD8 Tex",91
+"YZ6A","CD8 Tex",96
+"YZ6C","CD8 Tex",101
+"YZ6D","CD8 Tex",217
+"GZ7","CD8 Tex",65
+"YZ7","CD8 Tex",92
+"YZ7A","CD8 Tex",9
+"YZ7C","CD8 Tex",18
+"YZ7D","CD8 Tex",141
+"GZ8","CD8 Tex",93
+"YZ8","CD8 Tex",90
+"YZ8A","CD8 Tex",437
+"YZ8C","CD8 Tex",24
+"YZ8D","CD8 Tex",25
+"GZ9","CD8 Tex",45
+"YZ9","CD8 Tex",45
+"YZ9A","CD8 Tex",0
+"GZ5","Trm-like",12
+"YZ5","Trm-like",284
+"YZ5A","Trm-like",51
+"YZ5C","Trm-like",281
+"YZ5D","Trm-like",63
+"GZ6","Trm-like",60
+"YZ6","Trm-like",55
+"YZ6A","Trm-like",84
+"YZ6C","Trm-like",119
+"YZ6D","Trm-like",87
+"GZ7","Trm-like",19
+"YZ7","Trm-like",50
+"YZ7A","Trm-like",79
+"YZ7C","Trm-like",16
+"YZ7D","Trm-like",229
+"GZ8","Trm-like",28
+"YZ8","Trm-like",19
+"YZ8A","Trm-like",205
+"YZ8C","Trm-like",14
+"YZ8D","Trm-like",61
+"GZ9","Trm-like",30
+"YZ9","Trm-like",25
+"YZ9A","Trm-like",4
+"GZ5","NKT",81
+"YZ5","NKT",198
+"YZ5A","NKT",68
+"YZ5C","NKT",268
+"YZ5D","NKT",121
+"GZ6","NKT",376
+"YZ6","NKT",56
+"YZ6A","NKT",97
+"YZ6C","NKT",88
+"YZ6D","NKT",207
+"GZ7","NKT",111
+"YZ7","NKT",177
+"YZ7A","NKT",135
+"YZ7C","NKT",81
+"YZ7D","NKT",62
+"GZ8","NKT",351
+"YZ8","NKT",353
+"YZ8A","NKT",27
+"YZ8C","NKT",71
+"YZ8D","NKT",86
+"GZ9","NKT",92
+"YZ9","NKT",128
+"YZ9A","NKT",0
+"GZ5","MAIT",142
+"YZ5","MAIT",872
+"YZ5A","MAIT",186
+"YZ5C","MAIT",420
+"YZ5D","MAIT",213
+"GZ6","MAIT",163
+"YZ6","MAIT",368
+"YZ6A","MAIT",96
+"YZ6C","MAIT",48
+"YZ6D","MAIT",85
+"GZ7","MAIT",892
+"YZ7","MAIT",145
+"YZ7A","MAIT",124
+"YZ7C","MAIT",342
+"YZ7D","MAIT",349
+"GZ8","MAIT",396
+"YZ8","MAIT",28
+"YZ8A","MAIT",49
+"YZ8C","MAIT",14
+"YZ8D","MAIT",57
+"GZ9","MAIT",77
+"YZ9","MAIT",151
+"YZ9A","MAIT",0
+"GZ5","γδT",49
+"YZ5","γδT",601
+"YZ5A","γδT",147
+"YZ5C","γδT",250
+"YZ5D","γδT",111
+"GZ6","γδT",161
+"YZ6","γδT",171
+"YZ6A","γδT",152
+"YZ6C","γδT",86
+"YZ6D","γδT",144
+"GZ7","γδT",204
+"YZ7","γδT",52
+"YZ7A","γδT",41
+"YZ7C","γδT",82
+"YZ7D","γδT",184
+"GZ8","γδT",126
+"YZ8","γδT",44
+"YZ8A","γδT",39
+"YZ8C","γδT",3
+"YZ8D","γδT",38
+"GZ9","γδT",285
+"YZ9","γδT",236
+"YZ9A","γδT",1

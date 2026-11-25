@@ -1,0 +1,24 @@
+Celltype	Celltype_fine	CD8_cluster	annotation_confidence	annotation_review	cells
+CD8 Teff	CD8 Teff_GNLY	5	High	FALSE	4133
+MAIT-like T	MAIT-like_GZMK	4_0	Moderate	FALSE	1708
+CD8 Naive	CD8 Naive_TCF7	7_1	High	FALSE	1395
+CD8 Tem	CD8 Tem_GZMK	1	Moderate	FALSE	6888
+CD8 Teff	CD8 Teff_HLA-DRA	0	High	FALSE	12493
+CD8 Cycling	CD8 Cycling_MKI67	11	High	FALSE	898
+CD8 Naive	CD8 Naive_TCF7	7_0	High	FALSE	1626
+gdT-like T	gdT-like_cytotoxic	6_0	Moderate	TRUE	1551
+CD8 Teff	CD8 Teff_NEAT1	3	Moderate	FALSE	5803
+gdT-like T	gdT-like_TRDV2	6_1	High	FALSE	936
+MAIT-like T	MAIT-like_SLC4A10	4_1	High	FALSE	1529
+CD4-like T (review)	CD4-like_Naive_review	12	Low	TRUE	265
+CD8 Tem	CD8 Tem_NR4A2	8	Moderate	FALSE	2681
+CD8 T (low RNA)	CD8 T_lowRNA	2	Low	TRUE	6149
+CD8 Teff	CD8 Teff_GZMH	9	High	FALSE	1704
+CD8 Teff	CD8 Teff_ZNF683	6_2	Moderate	FALSE	829
+gdT-like T	gdT-like_GZMK	4_2	High	FALSE	580
+MAIT-like T	MAIT-like_IL7R	10	Moderate	FALSE	934
+NK/T-like (review)	NK-T-like_FCER1G	6_3	Low	TRUE	535
+CD8 Naive	CD8 Naive_FOS	7_2	High	FALSE	276
+CD8 Teff	CD8 Teff_FOS	4_3	Moderate	FALSE	518
+CD8 Activated	CD8 Activated_NFKB1	13	Moderate	TRUE	89
+CD8 Teff	CD8 Teff_cytotoxic_rare	6_4	Moderate	TRUE	18

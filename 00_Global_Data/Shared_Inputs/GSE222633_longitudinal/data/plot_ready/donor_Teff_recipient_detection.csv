@@ -1,0 +1,19 @@
+sample,Pair,timepoint,Expression_group,eligible_cells,recipient_detected_cells,recipient_detected_percent,clonotypes
+D10postPBMC,A,Post_GCSF,Other Teff,155,118,76.1290322580645,53
+D10postPBMC,A,Post_GCSF,Double positive,145,126,86.8965517241379,32
+D10prePBMC,A,Pre_GCSF,Other Teff,157,116,73.8853503184713,48
+D10prePBMC,A,Pre_GCSF,Double positive,132,112,84.8484848484848,32
+D16postPBMC,B,Post_GCSF,Double positive,112,63,56.25,32
+D16postPBMC,B,Post_GCSF,Other Teff,325,224,68.9230769230769,65
+D16prePBMC,B,Pre_GCSF,Other Teff,151,107,70.8609271523179,35
+D16prePBMC,B,Pre_GCSF,Double positive,84,54,64.2857142857143,42
+D26postPBMC,C,Post_GCSF,Other Teff,172,129,75,61
+D26postPBMC,C,Post_GCSF,Double positive,87,68,78.1609195402299,33
+D26prePBMC,C,Pre_GCSF,Double positive,56,43,76.7857142857143,22
+D26prePBMC,C,Pre_GCSF,Other Teff,157,122,77.7070063694268,56
+D29postPBMC,D,Post_GCSF,Other Teff,317,272,85.8044164037855,41
+D29postPBMC,D,Post_GCSF,Double positive,103,81,78.6407766990291,21
+D36postPBMC,E,Post_GCSF,Other Teff,102,56,54.9019607843137,15
+D36postPBMC,E,Post_GCSF,Double positive,33,12,36.3636363636364,9
+D36prePBMC,E,Pre_GCSF,Double positive,32,17,53.125,7
+D36prePBMC,E,Pre_GCSF,Other Teff,276,129,46.7391304347826,39

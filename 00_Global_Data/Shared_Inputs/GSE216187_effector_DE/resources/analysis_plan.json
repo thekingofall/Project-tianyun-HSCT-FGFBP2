@@ -1,0 +1,15 @@
+{
+ "source":"/data5/tiany/GSE216187/GSE216187_seurat_scRNA_SCT_orig_Celltype_v20261027.rds",
+ "cells":"Celltype in CD8 eff. 1 / CD8 eff. 2, combined for primary CR vs REL comparison",
+ "individual":"orig; retain original patient_id and group in metadata",
+ "normalization":"RNA counts divided by all-RNA cell library size times 10000",
+ "DE_unit":"one mean normalized expression vector per orig; log1p transform; two-sided Welch t-test, 3 CR vs 3 REL individuals",
+ "log2FC":"log2((mean of individual mean normalized counts in CR+1)/(same in REL+1))",
+ "heatmap_selection":"P<0.05, abs(log2FC)>=0.25, detection>=10% in at least one outcome; exclude technical genes; top100 per direction by P, then abs log2FC; include all ten prespecified genes regardless of selection",
+ "heatmap":"individual columns, gene rows; row z-scores of log1p patient means; complete-linkage Euclidean hierarchical clustering; marker labels on sides",
+ "sensitivity":"same CR vs REL patient-level analysis within CD8 eff.2 alone",
+ "markers_CR_requested":["KLRG1","IKZF1","GZMH","CX3CR1","ZNF683","FGFBP2","KLRD1"],
+ "markers_REL_requested":["CXCR4","DUSP2","CD27"],
+ "marker_policy":"retain requested labels and report observed direction/P; do not force expected outcome direction",
+ "source_policy":"source object is read only; all results use new names"
+}

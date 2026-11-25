@@ -1,0 +1,16 @@
+File	Server_path	Bytes	Purpose	Public_cohort	Access
+CD4.rds	/data5/tiany/HSCT/Result/CD4.rds	992981218	Primary annotated/fitted input		Keep on server; read from TIANY data root configured locally
+CD8cds.rds	/data5/tiany/HSCT/Result/CD8cds.rds	83213327	Primary annotated/fitted input		Keep on server; read from TIANY data root configured locally
+scRNA224.rds	/data5/tiany/HSCT/Result/scRNA224.rds	1933223535	Primary annotated/fitted input		Keep on server; read from TIANY data root configured locally
+CD8Tex.rds	/data5/tiany/HSCT/Result/CD8Tex.rds	404673162	Primary annotated/fitted input		Keep on server; read from TIANY data root configured locally
+CD4cds.rds	/data5/tiany/HSCT/Result/CD4cds.rds	98108191	Primary annotated/fitted input		Keep on server; read from TIANY data root configured locally
+final_vdj.rda	/data5/tiany/HSCT/Result/final_vdj.rda	112600737	Primary annotated/fitted input		Keep on server; read from TIANY data root configured locally
+Tcell.rds	/data5/tiany/HSCT/Result/Tcell.rds	2263074388	Primary annotated/fitted input		Keep on server; read from TIANY data root configured locally
+GSE216187_seurat_scRNA_SCT_v20261027.rds	/data5/tiany/GSE216187/GSE216187_seurat_scRNA_SCT_v20261027.rds	466394776	External cohort annotated input	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE216187	Keep on server; read from TIANY data root configured locally
+GSE216187_seurat_scRNA_SCT_orig_Celltype_v20261027.rds	/data5/tiany/GSE216187/GSE216187_seurat_scRNA_SCT_orig_Celltype_v20261027.rds	468982275	External cohort annotated input	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE216187	Keep on server; read from TIANY data root configured locally
+CD8cds.rds	/data5/tiany/GSE222633/CD8cds.rds	126621825	External cohort annotated input	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE222633	Keep on server; read from TIANY data root configured locally
+CD8.rds	/data5/tiany/GSE222633/CD8.rds	410072729	External cohort annotated input	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE222633	Keep on server; read from TIANY data root configured locally
+GSE222633_seurat_RNA_TCR_harmony_v20261026.rds	/data5/tiany/GSE222633/GSE222633_seurat_RNA_TCR_harmony_v20261026.rds	1731947621	External cohort annotated input	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE222633	Keep on server; read from TIANY data root configured locally
+Teff.rds	/data5/tiany/GSE222633/Teff.rds	213518784	External cohort annotated input	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE222633	Keep on server; read from TIANY data root configured locally
+Tcell.rds	/data5/tiany/RRAML/HSCTRR/T/Tcell.rds	420903455	GSE223844 annotated input	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE223844	Keep on server; read from TIANY data root configured locally
+Teff.rds	/data5/tiany/RRAML/HSCTRR/T/Teff.rds	57230024	GSE223844 annotated input	https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE223844	Keep on server; read from TIANY data root configured locally

@@ -1,0 +1,10 @@
+label	n_cells	figure_id
+REL	4465	GSE216187_UMAP_group
+CR	4036	GSE216187_UMAP_group
+CD8 T	4409	GSE216187_UMAP_celltype
+CD4 T	2143	GSE216187_UMAP_celltype
+MAIT	709	GSE216187_UMAP_celltype
+T cells	109	GSE216187_UMAP_celltype
+Progenitors	483	GSE216187_UMAP_celltype
+Gamma-delta T	373	GSE216187_UMAP_celltype
+Myeloid	275	GSE216187_UMAP_celltype

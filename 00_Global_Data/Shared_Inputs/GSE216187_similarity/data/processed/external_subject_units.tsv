@@ -1,0 +1,38 @@
+subject_key	subject	celltype	samples	cells
+GSM6660161_genotype_1|CD8 mem. 1	GSM6660161_genotype_1	CD8 mem. 1	1	540
+GSM6660161_genotype_0|CD8 mem. 1	GSM6660161_genotype_0	CD8 mem. 1	1	221
+GSM6660161_genotype_1|CD8 hobit	GSM6660161_genotype_1	CD8 hobit	1	123
+GSM6660161_genotype_2|CD8 mem. 1	GSM6660161_genotype_2	CD8 mem. 1	1	343
+GSM6660161_genotype_2|CD8 eff. 2	GSM6660161_genotype_2	CD8 eff. 2	1	148
+GSM6660161_genotype_2|CD8 mem. 3	GSM6660161_genotype_2	CD8 mem. 3	1	173
+GSM6660161_genotype_0|CD8 NV	GSM6660161_genotype_0	CD8 NV	1	51
+GSM6660161_genotype_1|CD8 mem. 3	GSM6660161_genotype_1	CD8 mem. 3	1	156
+GSM6660161_genotype_1|CD8 NV	GSM6660161_genotype_1	CD8 NV	1	87
+GSM6660161_genotype_1|CD8 eff. 2	GSM6660161_genotype_1	CD8 eff. 2	1	44
+GSM6660161_genotype_2|CD8 hobit	GSM6660161_genotype_2	CD8 hobit	1	80
+GSM6660161_genotype_1|CD8 IFN	GSM6660161_genotype_1	CD8 IFN	1	51
+GSM6660161_genotype_1|CD8 mem. 2	GSM6660161_genotype_1	CD8 mem. 2	1	61
+GSM6660161_genotype_2|CD8 NV	GSM6660161_genotype_2	CD8 NV	1	72
+GSM6660161_genotype_0|CD8 hobit	GSM6660161_genotype_0	CD8 hobit	1	21
+GSM6660161_genotype_0|CD8 eff. 2	GSM6660161_genotype_0	CD8 eff. 2	1	44
+GSM6660161_genotype_2|CD8 mem. 2	GSM6660161_genotype_2	CD8 mem. 2	1	43
+GSM6660161_genotype_2|CD8 IFN	GSM6660161_genotype_2	CD8 IFN	1	44
+GSM6660161_genotype_0|CD8 mem. 3	GSM6660161_genotype_0	CD8 mem. 3	1	10
+GSM6660162_genotype_0|CD8 mem. 2	GSM6660162_genotype_0	CD8 mem. 2	1	510
+GSM6660162_genotype_2|CD8 eff. 2	GSM6660162_genotype_2	CD8 eff. 2	1	70
+GSM6660162_genotype_2|CD8 eff. 1	GSM6660162_genotype_2	CD8 eff. 1	1	56
+GSM6660162_genotype_1|CD8 eff. 2	GSM6660162_genotype_1	CD8 eff. 2	1	209
+GSM6660162_genotype_1|CD8 NV	GSM6660162_genotype_1	CD8 NV	1	15
+GSM6660162_genotype_0|CD8 eff. 2	GSM6660162_genotype_0	CD8 eff. 2	1	331
+GSM6660162_genotype_1|CD8 mem. 2	GSM6660162_genotype_1	CD8 mem. 2	1	38
+GSM6660162_genotype_0|CD8 mem. 3	GSM6660162_genotype_0	CD8 mem. 3	1	284
+GSM6660162_genotype_1|CD8 eff. 1	GSM6660162_genotype_1	CD8 eff. 1	1	20
+GSM6660162_genotype_0|CD8 IFN	GSM6660162_genotype_0	CD8 IFN	1	19
+GSM6660162_genotype_1|CD8 mem. 3	GSM6660162_genotype_1	CD8 mem. 3	1	43
+GSM6660162_genotype_2|CD8 mem. 1	GSM6660162_genotype_2	CD8 mem. 1	1	28
+GSM6660162_genotype_2|CD8 mem. 2	GSM6660162_genotype_2	CD8 mem. 2	1	55
+GSM6660162_genotype_2|CD8 mem. 3	GSM6660162_genotype_2	CD8 mem. 3	1	245
+GSM6660162_genotype_0|CD8 eff. 1	GSM6660162_genotype_0	CD8 eff. 1	1	111
+GSM6660162_genotype_0|CD8 mem. 1	GSM6660162_genotype_0	CD8 mem. 1	1	74
+GSM6660162_genotype_0|CD8 hobit	GSM6660162_genotype_0	CD8 hobit	1	25
+GSM6660162_genotype_2|CD8 NV	GSM6660162_genotype_2	CD8 NV	1	14

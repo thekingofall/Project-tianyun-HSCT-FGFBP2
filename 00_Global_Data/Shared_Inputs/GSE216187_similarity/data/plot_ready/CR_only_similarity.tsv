@@ -1,0 +1,9 @@
+celltype	rho	rank	method
+CD8 NV	-0.465727230027359	8	CR-only, CD8-relative
+CD8 hobit	-0.338719219324	7	CR-only, CD8-relative
+CD8 mem. 1	-0.324938473277302	6	CR-only, CD8-relative
+CD8 mem. 2	0.205312720036802	4	CR-only, CD8-relative
+CD8 mem. 3	0.412595651327221	3	CR-only, CD8-relative
+CD8 eff. 1	0.658444105005621	2	CR-only, CD8-relative
+CD8 eff. 2	0.765133626830661	1	CR-only, CD8-relative
+CD8 IFN	-0.132763349242973	5	CR-only, CD8-relative

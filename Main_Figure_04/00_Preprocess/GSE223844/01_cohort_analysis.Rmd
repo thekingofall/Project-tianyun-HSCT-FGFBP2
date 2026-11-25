@@ -1,0 +1,2061 @@
+---
+title: "HSCTRR"
+output: html_document
+date: "2023-12-07"
+---
+#加载R包
+```{r}
+library(ggplot2)
+library(Seurat)
+library(dplyr)
+```
+
+
+#恶性细胞预测
+```{r}
+ALL <- NormalizeData(ALL) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+ALL <- RunPCA(ALL, verbose = F)
+#去批次
+ALL <- RunHarmony(ALL,group.by.vars = "orig.ident")
+ALL <- ALL %>% RunUMAP(dims=1:20,reduction = "harmony")
+ALL <- FindNeighbors(ALL, dims=1:20,reduction = "harmony")
+
+#转换为scanpy对象
+library(Seurat)
+dyn.load('/usr/local/hdf5/lib/libhdf5_hl.so.100')
+library(SeuratData)
+library(SeuratDisk)
+SaveH5Seurat(ALL, filename = "ALL.h5Seurat")
+Convert("ALL.h5Seurat", dest = "h5ad")
+```
+#匹配自己的模型
+```{r}
+pre2 <- read.csv("/data5/tiany/HSCTAML/Text/HSCT-prediction(24.4.25).csv")
+common_columns <- which(rownames(scRNA@meta.data) %in% pre2$X)
+length(common_columns)
+scRNA$prediction <- NA
+scRNA@meta.data$prediction[common_columns] <- pre2$prediction
+DimPlot(scRNA,group.by = 'prediction',split.by = 'orig.ident',ncol = 7)
+```
+
+#整理数据
+```{r}
+HSCT <- scRNA12[,scRNA12@meta.data$orig.ident %in% c('AML1007.1',"AML1007.5", "AML1010.1", "AML1010.5", "AML1012.1", "AML1012.4", "AML1016.1", "AML1016.2", "AML1019.1", "AML1019.5", "AML1022.1", "AML1022.3", "AML1026.1", "AML1026.4")]
+scRNA <- merge(HSCT,y=c(C4,C43,C5,C82))
+scRNA[["percent.mt"]] <- PercentageFeatureSet(scRNA, pattern = "^MT-")
+scRNA[["percent.rb"]] <- PercentageFeatureSet(scRNA, pattern = "^RP[SL]")
+
+```
+
+```{r}
+#质控
+plot.featrures = c("nFeature_RNA", "nCount_RNA", "percent.mt","percent.rb")
+group = "orig.ident"
+# 质控前小提琴图
+theme.set2 = theme(axis.title.x=element_blank())
+plots = list()
+for(i in seq_along(plot.featrures)){
+  plots[[i]] = VlnPlot(scRNA, group.by=group, pt.size = 0,
+                       features = plot.featrures[i], raster = FALSE) + theme.set2 + NoLegend()}
+wrap_plots(plots = plots, nrow=4)
+
+scRNA3 <- subset(scRNA, subset = nCount_RNA < 20000 & nFeature_RNA > 200 & 
+                  nFeature_RNA < 5000 & percent.mt < 8)
+plots = list()
+for(i in seq_along(plot.featrures)){
+  plots[[i]] = VlnPlot(scRNA3, group.by=group, pt.size = 0,
+                       features = plot.featrures[i], raster = FALSE) + theme.set2 + NoLegend()}
+wrap_plots(plots = plots, nrow=4)  
+scRNA <- scRNA3
+```
+
+#降维聚类
+```{r}
+scRNA <- NormalizeData(scRNA) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+scRNA <- RunPCA(scRNA, verbose = F)
+#去批次
+scRNA <- RunHarmony(scRNA,group.by.vars = "orig.ident")
+#维度
+ElbowPlot(scRNA, ndims = 50)
+pct <- scRNA[["pca"]]@stdev / sum(scRNA[["pca"]]@stdev) * 100
+cumu <- cumsum(pct)
+co1 <- which(cumu > 90 & pct < 5)[1]
+co1
+co2 <- sort(which((pct[1:length(pct) - 1] - pct[2:length(pct)]) > 0.1), decreasing = T)[1] + 1
+co2
+pcs <- min(co1, co2)
+pcs
+plot_df <- data.frame(pct = pct,
+                      cumu = cumu,
+                      rank = 1:length(pct))
+ggplot(plot_df, aes(cumu, pct, label = rank, color = rank > pcs)) +
+  geom_text() +
+  geom_vline(xintercept = 90, color = "grey") +
+  geom_hline(yintercept = min(pct[pct > 5]), color = "grey") +
+  theme_bw()
+rm(pct,cumu,co1,co2,pcs,plot_df)
+```
+
+```{r}
+scRNA <- scRNA %>% RunUMAP(dims=1:15,reduction = "harmony")
+DimPlot(scRNA, split.by = 'orig.ident',label = T,ncol = 7)
+scRNA <- FindNeighbors(scRNA, dims=1:15,reduction = "harmony")
+```
+
+
+```{r}
+#clustree
+library(clustree)
+scRNA1 <- FindClusters(scRNA, resolution = c(seq(.1,1,.1)))
+clustree(scRNA1@meta.data, prefix = "RNA_snn_res.")
+scRNA <- FindClusters(scRNA,resolution = 0.9)
+DimPlot(scRNA, reduction = "umap", label = TRUE,raster=FALSE)
+```
+
+##所有差异基因
+
+```{r}
+#setwd('../HSCTRR/')
+scRNA.markers <- FindAllMarkers(scRNA, only.pos = TRUE, min.pct = 0.25, logfc.threshscRNA = 0.25)
+scRNA.top30 <- data.frame(scRNA.markers %>% group_by(cluster) %>% slice_max(n = 30, order_by = avg_log2FC))
+write.csv(scRNA.top30,file = "scRNA.top30.csv")
+write.csv(scRNA.markers,file = "scRNA.allmarkers.csv")
+```
+
+## 命名
+
+```{r}
+cluster_names <- c("0" = "CD14 Monocyte","1" = "HSC/MPP","2" = "B","3" = "CD14 Monocyte","4" = "NK","5" = "CD4 T", "6" = "CD8 T","7" = "GMP","8" = "Later Ery","9" = "CD16 Monocyte","10" = "MEP","11" = "cDC","12" = "GMP cycling","13" =  "Mid Ery","14" = "CD14 Monocyte","15" = "pDC","16" = "Early Ery",
+"17" = "CD14 Monocyte","18" = "HSC/MPP","19" = "HSC/MPP","20" = "Mid Ery","21" = "NK","22" = "Later Ery","23" = "B")
+scRNA$Celltype <- cluster_names[scRNA$seurat_clusters]
+DimPlot(scRNA,group.by = 'Celltype',split.by = 'prediction',raster=FALSE)
+```
+##匹配重命名
+```{r}
+#scRNA2 <- scRNA
+common_columns <- which(rownames(scRNA@meta.data) %in% rownames(FCGR3A@meta.data))
+length(common_columns)
+scRNA@meta.data$Celltype[common_columns] <- FCGR3A$Celltype
+
+common_columns <- which(rownames(mal@meta.data) %in% rownames(scRNA@meta.data))
+length(common_columns)
+scRNA@meta.data$Celltype1[common_columns] <- mal$Celltype1
+```
+
+# 正常细胞定义
+```{r}
+subset_data <- p$data[p$data$prediction2 == "malignant" & (p$data$Celltype == "T" | p$data$Celltype == "Plasma" | p$data$Celltype == "B"| p$data$Celltype == "late Ery"| p$data$Celltype == "NK"), ]
+common_columns <- which(rownames(scRNA@meta.data) %in% rownames(subset_data))
+length(common_columns)
+#scRNA@meta.data$prediction1 <- scRNA@meta.data$prediction2
+scRNA@meta.data$prediction2[common_columns] <- 'normal'
+#
+subset <- p$data[p$data$prediction2 == "malignant" & p$data$UMAP_2 > 1&p$data$UMAP_1 < 7 &p$data$Celltype == "HSC/MPP", ]
+common_columns <- which(rownames(scRNA@meta.data) %in% rownames(subset))
+length(common_columns)
+#scRNA@meta.data$prediction1 <- scRNA@meta.data$prediction2
+scRNA@meta.data$Celltype[common_columns] <- 'Pro Mono'
+```
+
+# Fig1
+
+```{r}
+scRNA$Celltype <- factor(scRNA$Celltype, levels = c("HSC/MPP","GMP","MEP","Early Ery","Mid Ery","Later Ery","CD14 Mono","CD16 Mono","cDC","pDC","CD4 T","CD8 T", "NK", "B"))#"GMP cycling",
+
+gene <- c('CD34','CD38','PROM1','SPINK2','EGFL7','MPO','ELANE', 'CTSG', 'AZU1','MS4A2', 'HDC', 'CNRIP1','KIT','GATA1','BLVRB','GYPB', 'SLC4A1', 'HBB', 'LYZ', 'VCAN', 'FCN1', 'CD14', 'FCGR3A','CST3',"CD1C",'IRF8','JCHAIN','CD3D', 'CD3G','CD4','CD8A','IL7R', 'TCF7','KLRB1', 'KLRD1', 'GZMB', 'CD19', 'CD79A','MS4A1')#'MKI67',
+#气泡图
+DotPlot(scRNA,features = gene,group.by = 'Celltype',cols = c('#C0C0C0','#FF0000'))+ theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 10),axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 8))
+#umap
+scRNA$condition <- factor(scRNA$condition, levels = c("HC", "CR", "NR"))
+DimPlot(scRNA,split.by = 'condition',group.by = 'Celltype',label = T,label.size = 3)+theme(text = element_text(size = 10))#前者调整图里面的大小
+
+DimPlot(scRNA,group.by = 'Celltype',label = T,label.size = 3)+theme(text = element_text(size = 10))
+#面积堆积图按细胞类型
+t <- as.matrix(prop.table(table(scRNA$prediction,scRNA$Celltype), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 8),
+        axis.text.x = element_text(angle = 60, hjust = 1, size = 8))+
+  guides(fill=guide_legend(title=NULL))+scale_fill_manual(values=c('#FF0000','#C0C0C0'))
+
+#面积堆积图按细胞状态
+t <- as.matrix(prop.table(table(scRNA$condition,scRNA$Celltype), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+p$cluster <- factor(p$cluster, levels = c("HC","CR","NR"))
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 8),
+        axis.text.x = element_text(angle = 60, hjust = 1, size = 8))+
+  guides(fill=guide_legend(title=NULL))+scale_fill_manual(values=c('#336699','#FF9933','#CC3333'))
+#按照状态并分面
+new_col <- paste(scRNA$condition, scRNA$prediction, sep = "_")
+scRNA <- AddMetaData(scRNA, metadata = new_col, col.name = "new")
+
+t <- as.matrix(prop.table(table(scRNA$new,scRNA$Celltype), margin = 2)*100) 
+p <- as.data.frame(t)
+p <- p %>%
+  separate(Var1, into = c("Var1", "Var3"), sep = "_", remove = FALSE)
+
+colnames(p) <-c('condition',"Disease","cluster","proportion")
+p$condition <- factor(p$condition, levels = c("HC","CR","NR"))
+#进行分面
+ggplot(p, aes(cluster, proportion, fill = Disease)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ condition) +
+  ggtitle("") +
+  theme_bw() +
+  theme(
+    axis.ticks.length = unit(0.1, 'cm'),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    text = element_text(size = 8),
+    axis.text.x = element_text(angle = 60,hjust = 1,size = 6)
+  ) +
+  guides(fill = guide_legend(title = NULL)) +
+  scale_fill_manual(values = c('#FF0000','#C0C0C0'))
+#LSC标记基因
+DotPlot(scRNA,features = c("FCGR2A", "CD9", "ITGA5", "IL1RAP", "CD82"))
+
+```
+
+#恶性细胞专题
+```{r}
+Mal <- scRNA[,scRNA$Celltype %in% c("HSC/MPP",'GMP','MEP','CD14 Mono','CD16 Mono','cDC','pDC')]
+Mal$Celltype <- factor(Mal$Celltype, levels = c("HSC/MPP","GMP","MEP","Mono","DC"))
+
+Mal$type <- ifelse(Mal$prediction == "malignant", paste0(Mal$Celltype, "-like"), Mal$Celltype)
+Mal$type <- gsub("1", "HSC/MPP", Mal$type)
+Mal$type <- gsub("2", "GMP", Mal$type)
+Mal$type <- gsub("3", "MEP", Mal$type)
+Mal$type <- gsub("4", "Mono", Mal$type)
+Mal$type <- gsub("5", "DC", Mal$type)
+
+Mal$type <- factor(Mal$type, levels = c("HSC/MPP","HSC/MPP-like","GMP","GMP-like","MEP","MEP-like","Mono","Mono-like","DC","DC-like"))
+
+Idents(Mal) <- 'prediction'
+Mal.markers <- FindAllMarkers(Mal, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(Mal.markers,file = "Mal.allmarkers.csv")
+#细胞周期
+s.genes <- cc.genes.updated.2019$s.genes
+g2m.genes <- cc.genes.updated.2019$g2m.genes
+Mal <- CellCycleScoring(Mal, s.features = s.genes, g2m.features = g2m.genes)
+DimPlot(Mal, group.by = "Phase", label = TRUE)
+```
+#恶性细胞探索
+```{r}
+getwd()
+count <- scRNA[,scRNA$Celltype %in% c('HSC/MPP','GMP','MEP','CD14 Mono','CD16 Mono','cDC','pDC','Early Ery','Mid Ery','Later Ery')]
+Idents(count) <- 'prediction'
+count.markers <- FindAllMarkers(count, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(count.markers,file = "./gene/MvN.allmarkers.csv")
+#HSC
+Idents(HSC) <- "prediction"
+HSC.markers <- FindAllMarkers(HSC, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(HSC.markers,file = "./gene/Mal.allmarkers.csv")
+#GMP
+GMP <- scRNA[,scRNA$Celltype %in% c('GMP')]
+Idents(GMP) <- "prediction"
+GMP.markers <- FindAllMarkers(GMP, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(GMP.markers,file = "./gene/GMP.allmarkers.csv")
+#MEP
+MEP <- scRNA[,scRNA$Celltype %in% c('MEP')]
+Idents(MEP) <- "prediction"
+MEP.markers <- FindAllMarkers(MEP, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(MEP.markers,file = "./gene/MEP.allmarkers.csv")
+#Mono
+Mono <- scRNA[,scRNA$Celltype %in% c('CD14 Mono','CD16 Mono')]
+Idents(Mono) <- "prediction"
+Mono.markers <- FindAllMarkers(Mono, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(Mono.markers,file = "./gene/Mono.allmarkers.csv")
+#DC
+DC <- scRNA[,scRNA$Celltype %in% c('cDC','pDC')]
+Idents(DC) <- "prediction"
+DC.markers <- FindAllMarkers(DC, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(DC.markers,file = "./gene/DC.allmarkers.csv")
+#Ery
+Ery <- scRNA[,scRNA$Celltype %in% c('Early Ery','Mid Ery','Later Ery')]
+Idents(Ery) <- "prediction"
+Ery.markers <- FindAllMarkers(Ery, only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(Ery.markers,file = "./gene/Ery.allmarkers.csv")
+
+#提取基因
+HSC.malgenes <- HSC.markers$gene[HSC.markers$cluster == "malignant"]
+GMP.malgenes <- GMP.markers$gene[GMP.markers$cluster == "malignant"]
+MEP.malgenes <- MEP.markers$gene[MEP.markers$cluster == "malignant"]
+Mono.malgenes <- Mono.markers$gene[Mono.markers$cluster == "malignant"]
+DC.malgenes <- DC.markers$gene[DC.markers$cluster == "malignant"]
+Ery.malgenes <- Ery.markers$gene[Ery.markers$cluster == "malignant"]
+
+gene_lists <- list(HSC.malgenes, GMP.malgenes, MEP.malgenes, Mono.malgenes, DC.malgenes, Ery.malgenes)
+# 使用Reduce函数和intersect函数找到交集
+common_genes <- Reduce(intersect, gene_lists)
+```
+##CRvsNR 4组
+```{r}
+CN <- scRNA[,scRNA$condition %in% c('CR','NR')]
+CN$ph <- ""
+CN$ph <- ifelse(CN$condition == "CR", paste("CR-", CN$prediction, sep = ""), CN$ph)
+CN$ph <- ifelse(CN$condition == "NR", paste("NR-", CN$prediction, sep = ""), CN$ph)
+#柱形图
+ba <- as.data.frame(as.matrix(table(CN$Celltype,CN$ph)))
+ba$Var1 <- factor(ba$Var1, levels = c("HSC/MPP","GMP","MEP","Early Ery","Mid Ery","Later Ery","CD14 Mono","CD16 Mono","cDC","pDC","CD4 T","CD8 T", "NK", "B"), ordered = TRUE)
+ba$Var2 <- factor(ba$Var2, levels = c("CR-normal","CR-malignant","NR-normal","NR-malignant"))
+color_palette <- c("CR-malignant"='#033E60',"CR-normal"='#A5D1EA',
+                   "NR-malignant"='#7E1701',"NR-normal"='#ED8989')
+ggplot(ba, aes(x = Var1, y = Freq, fill = Var2)) +
+  geom_bar(stat = "identity", position = "stack") +#dodge展开的意思
+  labs(x = "Cell type", y = "Number of cell") +
+  scale_fill_manual(values = color_palette) + 
+  theme_minimal()+
+  scale_y_continuous(breaks = seq(0, 6400, by = 1000)) +
+  theme(
+    panel.grid = element_blank(),  # 去掉网格线
+    axis.line = element_line(color = "black"),  # 设置坐标轴颜色
+    axis.text.x = element_text(angle = 45, hjust = 1),  # 旋转x轴标签
+    axis.ticks.y = element_line(),  # 保留y轴刻度线
+    legend.position = "top",  # 将图例放在顶部
+    legend.title = element_blank()  # 隐藏图例标题
+  )
+
+```
+##良恶柱形图/热图富集
+```{r}
+#柱形图
+Mal$Celltype=factor(Mal$Celltype,level=unique(Mal$Celltype))
+ba <- as.data.frame(as.matrix(table(Mal$Celltype,Mal$prediction)))
+ba$Var1 <- factor(ba$Var1, levels = c("HSC/MPP","GMP","MEP","EBM","Early Ery","Monocyte","cDC","pDC"), ordered = TRUE)
+ba$Var2 <- factor(ba$Var2, levels = c("Control","AML cell"))
+color_palette <- c("Control"='#619CD9',"AML cell"='#E38D8C')
+#ba$Var2 <- gsub("Normal", "Control", ba$Var2)
+#ba$Var2 <- gsub("Malignant", "AML cell", ba$Var2)
+ba <- ba[!is.na(ba$Var1), ] 
+ggplot(ba, aes(x = Var1, y = Freq, fill = Var2)) +
+  geom_bar(stat = "identity", position = "stack") +#dodge展开的意思
+  labs(x = "Cell type", y = "Number of cell") +
+  scale_fill_manual(values = color_palette) + 
+  theme_minimal()+
+  scale_y_continuous(breaks = seq(0, 19000, by = 3000)) +
+  theme(
+    panel.grid = element_blank(),  # 去掉网格线
+    axis.line = element_line(color = "black"),  # 设置坐标轴颜色
+    axis.text.x = element_text(angle = 45, hjust = 1),  # 旋转x轴标签
+    axis.ticks.y = element_line(),  # 保留y轴刻度线
+    legend.position = "top",  # 将图例放在顶部
+    legend.title = element_blank()  # 隐藏图例标题
+  )
+#基因方块热图
+library(ComplexHeatmap)
+DefaultAssay(Mye2) <- "RNA"
+features=c(  
+            "SPINK2", "CD34","CDK6", "C1QTNF4","CLEC11A","FAM30A", "PRSS57",
+            "EGFL7", "NPM1", "PROM1", "LDHB", "EEF1A1","EEF1B2","HSF1","HLA-DPA1","HLA-DPB1",
+            "IGFBP7","CLIC1","APEX1","CD300A","UBA7","USP22",
+            "ACADVL","NRROS","CD82", "CD9","ENO1",
+        
+           "S100A12", "S100A8", "S100A9","S100A6","S100P","SLC25A37", "BLVRB", "FCN1", "PLBD1",
+            "VCAN", "RETN", "CD36",  "ALOX5AP", "MNDA", "RGS2",
+           "PLAUR", "PADI4", "HMGB2", "FPR1", "HIST1H4C", "NCF1", "CXCL8", "CTSD", 
+           "ITGAM"
+)
+gene_cell_exp <- AverageExpression(Mye2,
+                                   features = features,
+                                   group.by = 'prediction',
+                                   slot = 'data') 
+gene_cell_exp <- as.data.frame(gene_cell_exp$RNA)
+df <- data.frame(colnames(gene_cell_exp))
+colnames(df) <- 'class'
+top_anno = HeatmapAnnotation(df = df,#细胞名/clusTcellr
+                             border = T,
+                             show_annotation_name = F,
+                             gp = gpar(col = 'black'),
+                             gap = unit(2, "points"),
+                             col = list(class = c('normal'='#033E60','malignant'='#7E1701')))#颜色设置
+marker_exp <- t(scale(t(gene_cell_exp),scale = T,center = T))
+Heatmap(marker_exp,
+        cluster_rows = F,
+        cluster_columns = F,
+        show_column_names = F,
+        show_row_names = T,
+        column_title = NULL,
+        heatmap_legend_param = list(
+          title=' '),
+        col = colorRampPalette(c("#88A2D9","white",'#ED8481'))(100),
+        border = 'black',
+        rect_gp = gpar(col = "black", lwd = 1),
+        row_names_gp = gpar(fontsize = 8),
+        column_names_gp = gpar(fontsize = 10),
+        top_annotation = top_anno)
+#双向富集
+library(readxl)
+df=read_excel("fuji.xlsx")
+
+df <- df %>% arrange(class,desc(pvalue))
+df$LogPvalue <- ifelse(df$class == "malignant", log10(df$pvalue),-log10(df$pvalue))
+df$Description <- factor(df$Description,level=df$Description)
+x_max = max(abs(df$LogPvalue))
+color_list <- c('#d55640',"#68B6D4")
+ggplot(df,aes(x =LogPvalue, y = Description, fill = class)) + 
+  geom_col() + 
+  scale_x_continuous(limits = c(-x_max,x_max)) +
+  scale_fill_manual(values = color_list) +
+  geom_text(data = df[which(df$class == "normal"),],
+            aes(x = -0.5, y = Description, label = Description,color = class),
+            size = 4,
+            hjust = 1) + 
+  geom_text(data = df[which(df$class == "malignant"),],
+            aes(x = 0.5, y = Description, label = Description,color = class),
+            size = 4,
+            hjust = 0)  + 
+  scale_colour_manual(values = color_list) +
+  labs(x="log10(P)", y=NULL, title="GO bological process") +
+  annotate("text", x = 25, y = 15, label = "normal", size = 10, fontface = "bold", color="#F59B85") +
+  annotate("text", x = -25, y =5, label = "malignant", size =10, fontface = "bold", color="#68B6D4") +
+  theme_classic() +
+  theme(
+    plot.title = element_text(size = 15,hjust=0.5), 
+    axis.text.x = element_text(size = 10),
+    axis.title.x = element_text(size = 10),
+    axis.text.y = element_blank(),
+    axis.line.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    legend.position = 'none'
+  )
+
+
+```
+
+
+##良恶OR
+```{r}
+Mal <- Mal[,Mal$Celltype %in% c("HSC/MPP","GMP","MEP","EBM","Early Ery","Monocyte","cDC","pDC")]
+table(Mal$prediction,Mal$Celltype)
+# 提供数据CRvsNR
+cr_counts <-  c(1245, 2487, 1395, 883, 1950, 13271, 1006, 528)
+ctrl_counts <- c(11376, 3672, 1393, 989, 441, 5829, 422, 211)
+cell_types <- c("HSC/MPP","GMP","MEP","EBM","Early Ery","Monocyte","cDC","pDC")
+# 创建一个函数来计算OR值、log2OR值和Fisher's精确检验的p值
+calculate_OR_and_pvalue <- function(cr_count, ctrl_count) {
+  # 计算OR值
+  odds_ratio <- (cr_count[1] / cr_count[2]) / (ctrl_count[1] / ctrl_count[2])
+  # 计算Fisher's精确检验的p值
+  fisher_test <- fisher.test(matrix(c(cr_count, ctrl_count), nrow = 2))
+  p_value <- fisher_test$p.value
+  # 计算log2OR值
+  log2_odds_ratio <- log2(odds_ratio)
+  # 返回OR值、log2OR值和Fisher's精确检验的p值
+  return(list(OR = odds_ratio, log2_OR = log2_odds_ratio, p_value = p_value))
+}
+
+# 创建一个空列表来存储OR值、log2OR值和Fisher's精确检验的p值
+result_list <- list()
+
+# 循环遍历每种细胞类型，并计算OR值、log2OR值和Fisher's精确检验的p值
+for (i in seq_along(cell_types)) {
+  cr_count <- c(cr_counts[i], sum(cr_counts))
+  ctrl_count <- c(ctrl_counts[i], sum(ctrl_counts))
+  result_list[[i]] <- calculate_OR_and_pvalue(cr_count, ctrl_count)
+}
+
+# 将结果组合成数据框
+result_df <- data.frame(Cell_Type = cell_types, OR_Value = sapply(result_list, function(x) x$OR), 
+                        log2_OR_Value = sapply(result_list, function(x) x$log2_OR),
+                        p_value = sapply(result_list, function(x) x$p_value))
+
+# 输出结果
+print(result_df)
+###CRvsNR柱形图
+result_df$color <- ifelse(result_df$log2_OR_Value > 0, '#619CD9', '#E38D8C')
+result_df$significance <- ifelse(result_df$p_value < 0.001, "***", ifelse(result_df$p_value < 0.01, "**", ifelse(result_df$p_value < 0.05, "*", "n.s")))
+
+result_df$Cell_Type <- factor(result_df$Cell_Type, levels = c("HSC/MPP","GMP","MEP","EBM","Early Ery","Monocyte","cDC","pDC"), ordered = TRUE)
+# Plot
+ggplot(result_df, aes(x = Cell_Type, y = log2_OR_Value, fill = color)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = significance, 
+                y = ifelse(log2_OR_Value >= 0, log2_OR_Value-0.05, log2_OR_Value)), 
+            vjust = ifelse(result_df$log2_OR_Value >= 0, -0.5, 1.5), size = 4) +  # 调整标签位置
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 10),  # 调整两个坐标轴的文本大小
+        axis.ticks = element_line(size = 0.5),  # 调整坐标轴刻度的粗细
+        panel.grid.major = element_blank(),  # 移除主要网格线
+        panel.grid.minor = element_blank(),  # 移除次要网格线
+        axis.line = element_line(color = "black", size = 0.5),  # 线条细化
+        panel.border = element_blank(),  # 移除面板边框
+        panel.background = element_blank()) +  # 移除面板背景
+  labs(x = "", y = "Enrichment
+(log2OR)") +  # 更改坐标轴和标题的标签为中文
+  scale_fill_identity() 
+```
+
+
+##CRvsNR细胞数图
+```{r}
+#柱形图
+ba <- as.data.frame(as.matrix(table(CN$Celltype,CN$condition)))
+ba$Var1 <- factor(ba$Var1, levels = c("HSC/MPP", "GMP", "MEP", "EBM", "Early Ery", "Mid Ery", "Later Ery", "Monocyte", "cDC", "pDC", "B", "T", "NK"), ordered = TRUE)
+color_palette <- c("CR"='#EB8ABA',"NR"='#9584C1')
+ggplot(ba, aes(x = Var1, y = Freq, fill = Var2)) +
+  geom_bar(stat = "identity", position = "stack") +#dodge展开的意思
+  labs(x = "Cell type", y = "Number of cell") +
+  scale_fill_manual(values = color_palette) + 
+  theme_minimal()+
+  scale_y_continuous(breaks = seq(0, 6400, by = 1000)) +
+  theme(
+    panel.grid = element_blank(),  # 去掉网格线
+    axis.line = element_line(color = "black"),  # 设置坐标轴颜色
+    axis.text.x = element_text(angle = 45, hjust = 1),  # 旋转x轴标签
+    axis.ticks.y = element_line(),  # 保留y轴刻度线
+    legend.position = "top",  # 将图例放在顶部
+    legend.title = element_blank()  # 隐藏图例标题
+  )
+#umap
+DimPlot(CN,group.by ='condition',cols = c("#FF9933","#CECECB"))
+DimPlot(CN,group.by ='condition',cols = c("#CECECB","#CC3333"))
+```
+
+
+##CRvsNR OR值
+```{r}
+# 提供数据CRvsNR
+cr_counts <- c(1069, 511, 240, 32, 266, 182, 1223, 147, 62, 227, 956, 2879, 2157)
+ctrl_counts <- c(4724, 2387, 635, 469, 433, 125, 307, 5239, 276, 95, 1111, 977, 1025)
+
+cell_types <- c("HSC/MPP", "GMP", "MEP", "EBM", "Early Ery", "Mid Ery", "Later Ery", "Monocyte", "cDC", "pDC", "B", "T", "NK") 
+# 创建一个函数来计算OR值、log2OR值和Fisher's精确检验的p值
+calculate_OR_and_pvalue <- function(cr_count, ctrl_count) {
+  # 计算OR值
+  odds_ratio <- (cr_count[1] / cr_count[2]) / (ctrl_count[1] / ctrl_count[2])
+  # 计算Fisher's精确检验的p值
+  fisher_test <- fisher.test(matrix(c(cr_count, ctrl_count), nrow = 2))
+  p_value <- fisher_test$p.value
+  # 计算log2OR值
+  log2_odds_ratio <- log2(odds_ratio)
+  # 返回OR值、log2OR值和Fisher's精确检验的p值
+  return(list(OR = odds_ratio, log2_OR = log2_odds_ratio, p_value = p_value))
+}
+
+# 创建一个空列表来存储OR值、log2OR值和Fisher's精确检验的p值
+result_list <- list()
+
+# 循环遍历每种细胞类型，并计算OR值、log2OR值和Fisher's精确检验的p值
+for (i in seq_along(cell_types)) {
+  cr_count <- c(cr_counts[i], sum(cr_counts))
+  ctrl_count <- c(ctrl_counts[i], sum(ctrl_counts))
+  result_list[[i]] <- calculate_OR_and_pvalue(cr_count, ctrl_count)
+}
+
+# 将结果组合成数据框
+result_df <- data.frame(Cell_Type = cell_types, OR_Value = sapply(result_list, function(x) x$OR), 
+                        log2_OR_Value = sapply(result_list, function(x) x$log2_OR),
+                        p_value = sapply(result_list, function(x) x$p_value))
+
+# 输出结果
+print(result_df)
+###CRvsNR柱形图
+result_df$color <- ifelse(result_df$log2_OR_Value > 0, '#EB8ABA','#9584C1')
+result_df$significance <- ifelse(result_df$p_value < 0.001, "***", ifelse(result_df$p_value < 0.01, "**", ifelse(result_df$p_value < 0.05, "*", "n.s")))
+
+result_df$Cell_Type <- factor(result_df$Cell_Type, levels = c("HSC/MPP", "GMP", "MEP", "EBM", "Early Ery", "Mid Ery", "Later Ery", "Monocyte", "cDC", "pDC", "B", "T", "NK"), ordered = TRUE)
+# Plot
+ggplot(result_df, aes(x = Cell_Type, y = log2_OR_Value, fill = color)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = ifelse(significance == "n.s", significance, "***"), 
+                y = ifelse(log2_OR_Value >= 0, log2_OR_Value-0.05, log2_OR_Value)), 
+            vjust = ifelse(result_df$log2_OR_Value >= 0, -0.5, 1.5), size = 4) +  # 调整标签位置
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 10),  # 调整两个坐标轴的文本大小
+        axis.ticks = element_line(size = 0.5),  # 调整坐标轴刻度的粗细
+        panel.grid.major = element_blank(),  # 移除主要网格线
+        panel.grid.minor = element_blank(),  # 移除次要网格线
+        axis.line = element_line(color = "black", size = 0.5),  # 线条细化
+        panel.border = element_blank(),  # 移除面板边框
+        panel.background = element_blank()) +  # 移除面板背景
+  labs(x = "", y = "Enrichment
+(log2OR)") +  # 更改坐标轴和标题的标签为中文
+  scale_fill_identity() 
+
+```
+##良恶基因评分
+```{r}
+#参与免疫反映的细胞活化GO:0001819
+#positive regulation of cytokine production
+Active <- c(
+  "6030468B19Rik", "ABL1", "ABR", "ADA", "ADORA2B", "ADORA3", "AICDA", "ANXA1", "ANXA3", "AP1G1",
+  "APBB1IP", "APLF", "APP", "ASCL2", "ATAD5", "ATP7A", "BATF", "BCL3", "BCL6", "BCR",
+  "BRD2", "BRD4", "BTK", "CBL", "CCL3", "CCL19", "CCL20", "CCR2", "CCR6", "CCR7",
+  "CD19", "CD28", "CD40", "CD40LG", "CD46", "CD48", "CD74", "CD81", "CD84", "CD160",
+  "CD177", "CD180", "CD244", "CD300A", "CDH17", "CEACAM1", "CHGA", "CLCF1", "CLEC4D", "CLEC4E",
+  "CLEC7A", "CLNK", "CORO1A", "CPLX2", "CRACR2A", "CRHR1", "CX3CR1", "D6WSU163E", "DLL1", "DNASE1",
+  "DNASE1L3", "DOCK2", "DOCK10", "DOCK11", "DYSF", "EIF2AK4", "ENPP1", "ENPP3", "ENTPD7", "EOMES",
+  "EP300", "ERCC1", "EXO1", "EXOSC3", "EXOSC6", "F2RL1", "FCER1A", "FCER1G", "FCGR4", "FER",
+  "FER1L5", "FES", "FGL2", "FGR", "FOXF1", "FOXP1", "FOXP3", "GAB2", "GADD45G", "GAPT",
+  "GATA1", "GATA2", "GATA3", "GBF1", "GPR15LG", "GPR183", "GRN", "GRP", "H2-DMB1", "H2-DMB2",
+  "H2-EA", "H2-M3", "HAVCR2", "HLX", "HMCES", "HMGB1", "HMOX1", "HSPD1", "ICAM1", "ICOSL",
+  "IFI35", "IFNA1", "IFNA2", "IFNA4", "IFNA5", "IFNA6", "IFNA7", "IFNA9", "IFNA11", "IFNA12",
+  "IFNA13", "IFNA14", "IFNA15", "IFNA16", "IFNAB", "IFNB1", "IFNE", "IFNG", "IFNK", "IFNZ",
+  "IGH-7", "IGHE", "IL2", "IL4", "IL4RA", "IL6", "IL6RA", "IL10", "IL12B", "IL13",
+  "IL13RA2", "IL18", "IL18R1", "IL21", "IL23A", "IL27", "IL27RA", "IL33", "IRF1", "IRF4",
+  "IRF8", "ITFG2", "ITGAL", "ITGAM", "ITGB2", "ITGB2L", "ITM2A", "JAK3", "KARS1", "KIT",
+  "KMT2A", "KMT5B", "KMT5C", "LAMP1", "LAT", "LAT2", "LBP", "LCP1", "LEF1", "LFNG",
+  "LGALS1", "LGALS3", "LGALS8", "LGALS9", "LIG4", "LILRB4", "LOXL3", "LRP1", "LY9", "LYN",
+  "LYPD10", "LYPD11", "MAD2L2", "MALT1", "MDK", "MEN1", "MFNG", "MILR1", "MIR181B-1", "MIR181B-2",
+  "MIR301", "MIR326", "MIR873A", "MLH1", "MRGPRB1", "MRGPRX2", "MS4A2", "MSH2", "MSH6", "MTOR",
+  "MYB", "MYD88", "MYO1F", "NBN", "NCKAP1L", "NDFIP1", "NFKBID", "NFKBIZ", "NKG7", "NKX2-3",
+  "NLRP3", "NMI", "NOTCH2", "NPPA", "NPPC", "NR4A3", "NSD2", "OTUD5", "PAGR1A", "PARP3",
+  "PAXIP1", "PCK1", "PDPK1", "PF4", "PGLYRP1", "PGLYRP2", "PGLYRP3", "PGLYRP4", "PHF14", "PI4K2A",
+  "PIKFYVE", "PLA2G3", "PLCG2", "PLCL2", "PLD2", "PMS2", "POU2AF1", "PRAM1", "PRKCE", "PRKCZ",
+  "PSEN1", "PSEN2", "PTAFR", "PTGDR", "PTGDS", "PTGER4", "PTK2B", "PTPN6", "PTPRC", "PYCARD",
+  "RAB27A", "RAB44", "RABGEF1", "RAC2", "RAG2", "RARA", "RASGRP1", "RC3H1", "RC3H2", "RELB",
+  "RIF1", "RIPK2", "RNF8", "RNF168", "RORA", "RORC", "RPS6", "SANBR", "SBNO2", "SCN11A",
+  "SCNN1B", "SEMA4A", "SH2D1B", "SHB", "SHLD1", "SHLD2", "SHLD3", "SLAMF1", "SLAMF6", "SLC11A1",
+  "SLC15A4", "SLC18A2", "SLFN2", "SMAD7", "SNAP23", "SNX4", "SOCS5", "SPHK2", "SPI1", "SPN",
+  "ST3GAL1", "STAT3", "STAT4", "STAT6", "STX4", "STX11", "STXBP1", "STXBP2", "STXBP3", "SUCNR1",
+  "SUPT6", "SWAP70", "SYK", "TAC4", "TBX21", "TCIM", "TFRC", "TGFB1", "TICAM1", "TLR4",
+  "TMEM98", "TNF", "TNFAIP3", "TNFSF4", "TNFSF12", "TNFSF13", "TNFSF18", "TREM2", "TREX1", "TP53",
+  "TP53BP1", "TSC1", "TYROBP", "UNC13D", "UNG", "VAMP2", "VAMP7", "VAMP8", "XBP1", "XRCC4",
+  "YWHAZ", "ZBTB7B", "ZC3H12A", "ZFP35", "ZFP683")
+#参与细胞活化 GO:0050867
+#positive regulation of cell activation
+# GO:1903706
+CellActive <- c("ABL1", "ABL2", "ACTA2", "ACTB", "ACTL6A", "ACTL6B", "ADA", "ADAM8", "ADK", "AGER",
+            "AIF1", "AKIRIN2", "AMBRA1", "ANXA1", "AP3B1", "AP3D1", "ARID1A", "ARID2", "ATAD5", "ATP11C",
+            "AXL", "B2M", "BAD", "BCL2", "BCL6", "BCL10", "BLM", "BLOC1S3", "BLOC1S6", "BMI1",
+            "BRD2", "BRD4", "BRD7", "BST1", "BTK", "BTN2A2", "BTNL2", "CAPN3", "CARD11", "CARMIL2",
+            "CAV1", "CBFB", "CCDC88B", "CCL2", "CCL5", "CCL19", "CCL21A", "CCN2", "CCR2", "CCR7",
+            "CD1D1", "CD1D2", "CD3E", "CD4", "CD5", "CD6", "CD24A", "CD27", "CD28", "CD38",
+            "CD40", "CD40LG", "CD46", "CD47", "CD55", "CD55B", "CD59A", "CD59B", "CD74", "CD80",
+            "CD81", "CD83", "CD86", "CD160", "CD209C", "CD209D", "CD209E", "CD226", "CD244A", "CD274",
+            "CD276", "CD300LB", "CD320", "CDKN1A", "CEACAM1", "CEBPA", "CFTR", "CHRNB2", "CLCF1", "CLEC4D",
+            "CLEC7A", "CORO1A", "CRLF2", "CSF1R", "CTSC", "CYLD", "CYRIB", "DDR2", "DGAT1", "DHPS",
+            "DNAJA3", "DOCK8", "DPP4", "DPPA1", "DUSP10", "EFNB1", "EFNB2", "EFNB3", "EGR3", "EP300",
+            "EPHB2", "EPHB4", "EPHB6", "EPO", "EXOSC3", "EXOSC6", "FADD", "FCHO1", "FGF10", "FGFR1",
+            "FLNA", "FLOT2", "FLT3L", "FOXO3", "FOXP3", "GAS6", "GATA3", "GIMAP3", "GIMAP5", "GLI3",
+            "GP1BA", "GP1BB", "GP5", "GP9", "GPAM", "GPR183", "H2-AA", "H2-AB1", "H2-DMA", "H2-DMB1",
+            "H2-DMB2", "H2-EA", "H2-EB1", "H2-EB2", "H2-M3", "H2-OA", "H2-OB", "H2-T23", "H60A", "HAMP",
+            "HAVCR1", "HAVCR2", "HES1", "HLX", "HMCES", "HMGB1", "HPS1", "HSP90AA1", "HSPD1", "HSPH1",
+            "ICOS", "ICOSL", "IFNG", "IGF1", "IGF2", "IGFBP2", "IGHD", "IGHG2A", "IGHM", "IGLC4",
+            "IHH", "IKZF1", "IL1A", "IL1B", "IL1RL1", "IL1RL2", "IL2", "IL2RA", "IL2RG", "IL3",
+            "IL4", "IL4I1", "IL4I1B", "IL4RA", "IL5", "IL6", "IL6ST", "IL7", "IL7R", "IL10",
+            "IL12A", "IL12B", "IL12RB1", "IL13", "IL15", "IL15RA", "IL18", "IL21", "IL23A", "IL33",
+            "IL36B", "INPP5D", "IRF1", "IRGM1", "IRS2", "ITGAL", "ITPKB", "JAK2", "JAK3", "JUND",
+            "KARS1", "KAT5", "KCNN4", "KITL", "KLHL25", "KLRK1", "KMT5B", "KMT5C", "LBP", "LCK",
+            "LEF1", "LEP", "LGALS1", "LGALS8", "LGALS9", "LILRA5", "LILRB4A", "LILRB4B", "LRRK2", "LYST",
+            "MAD2L2", "MALT1", "MDK", "MEF2C", "MIF", "MIR326", "MLH1", "MMP8", "MMP14", "MPL",
+            "MSH2", "MYB", "MYD88", "NCK1", "NCK2", "NCKAP1L", "NECTIN2", "NFATC2", "NFKBID", "NFKBIZ",
+            "NKAP", "NLRP3", "NOD2", "NR4A3", "NSD2", "PAGR1A", "PAXIP1", "PBRM1", "PCID2", "PCK1",
+            "PDCD1LG2", "PDGFB", "PDGFRB", "PDPN", "PEAR1", "PELI1", "PHF10", "PIK3R6", "PLA2G4A", "PLEK",
+            "PLPP6", "PMS2", "PNP", "PPP2R3C", "PPP3CA", "PRDM1", "PRKCQ", "PRKCZ", "PRKDC", "PRLR",
+            "PTPN22", "PTPRC", "PTPRJ", "PYCARD", "RAET1B", "RAG1", "RARA", "RASAL3", "RASGRP1", "RHOA",
+            "RHOH", "RIF1", "RIPK2", "RPS3", "RPS6KA1", "RUNX1", "RUNX3", "SART1", "SASH3", "SELENOK",
+            "SELP", "SH2D1B1", "SH2D1B2", "SH3KBP1", "SHB", "SHH", "SHLD1", "SHLD2", "SHLD3", "SIRPA",
+            "SIRPB1A", "SIRPB1B", "SIRPB1C", "SIRPD", "SKINT1", "SLAMF1", "SLC4A1", "SLC7A1", "SLC39A10", "SMARCA2",
+            "SMARCA4", "SMARCB1", "SMARCC1", "SMARCC2", "SMARCD1", "SMARCD2", "SMARCD3", "SMARCE1", "SMO", "SOCS1",
+            "SOCS5", "SOX4", "SOX12", "SOX13", "SOX15", "SPHK2", "SPI1", "SPN", "SPTA1", "STAP1",
+            "STAT5A", "STAT5B", "STAT6", "SVEP1", "SYK", "TAC1", "TACR1", "TAFA3", "TBX21", "TCF3",
+            "TCRB", "TESPA1", "TFRC", "TGFB1", "TGFBR2", "THBS1", "THY1", "TICAM1", "TIMD2", "TIMD5",
+            "TIMD6", "TIRAP", "TLR4", "TLR6", "TLR9", "TNF", "TNFRSF4", "TNFRSF13C", "TNFRSF14", "TNFSF4",
+            "TNFSF9", "TNFSF11", "TNFSF12", "TNFSF13", "TNFSF13B", "TNFSF14", "TNIP2", "TOX", "TRAF6", "TREM2",
+            "TRP53BP1", "TSLP", "TTBK1", "TYK2", "TYROBP", "ULBP1", "VAV3", "VCAM1", "VNN1", "VSIR",
+            "VTCN1", "WNT3A", "WNT5A", "WNT10B", "XBP1", "XCL1", "XRCC6", "ZAP70", "ZBTB1", "ZBTB7B",
+            "ZFP335", "ZFP609", "ZMIZ1", "ZP3")
+
+#regulation of hemopoiesis GO:1903706
+Hemopoiesis <- c("ABCB10", "ABL1", "ACIN1", "ACTB", "ACTL6A", "ACTL6B", "ACVR1B", "ACVR2A", "ADA", "ADAM8", "ADIPOQ", "ADRM1", "AGER", "AMBRA1", "ANKLE1", "ANKRD54", "ANXA1", "AP3B1", "AP3D1", "APC", "APCS", "ARID1A", "ARID2", "ASCL2", "ASXL2", "ATG7", "ATP11C", "AXL", "B2M", "BAD", "BCL6", "BMP4", "BMYC", "BRAF", "BRD1", "BRD2", "BRD4", "BRD7", "BRPF3", "BTN2A2", "C1QC", "CAR2", "CARD11", "CARMIL2", "CARTPT", "CASP8", "CBFB", "CCL3", "CCL5", "CCL9", "CCL19", "CCL20", "CCL21B", "CCR1", "CCR1L1", "CCR2", "CCR6", "CCR7", "CD1D1", "CD4", "CD24A", "CD27", "CD28", "CD40LG", "CD44", "CD46", "CD74", "CD83", "CD101", "CDC73", "CDK6", "CDKN2A", "CEACAM1", "CEBPA", "CEBPB", "CIB1", "CLDN18", "CLEC2D", "CLEC2G", "CLEC2I", "CLEC4G", "CLPTM1", "CNOT4", "CREB1", "CRTAM", "CSF1", "CSF1R", "CSF3", "CSF3R", "CTLA2A", "CTLA4", "CTNNB1", "CTNNBIP1", "CTR9", "CUL4A", "CYLD", "CYP26B1", "DCSTAMP", "DICER1", "DLK1", "DLL1", "DROSHA", "DTX1", "DUSP10", "DUXBL1", "EEIG1", "EGR3", "EIF6", "EP300", "ERBB2", "ERFE", "ESRRA", "ETS1", "EVI2", "EVI2B", "FADD", "FAM210B", "FANCA", "FANCD2", "FAS", "FAXDC2", "FBN1", "FBXO7", "FBXW7", "FES", "FGFR3", "FGL2", "FLT3", "FLT3L", "FOS", "FOXJ1", "FOXN1", "FOXO3", "FOXP1", "FOXP3", "FSHB", "FSHR", "FSTL3", "GABPA", "GAS6", "GATA1", "GATA2", "GATA3", "GFI1B", "GIMAP3", "GIMAP5", "GLI3", "GNAS", "GPR55", "GPR68", "GPR137", "GPR137B", "GPR171", "GSK3B", "H2-AA", "H2-DMA", "H2-EA", "H2-M3", "H2-OA", "HAX1", "HBB-B2", "HCLS1", "HIF1A", "HLX", "HMGB1", "HMGB2", "HMGB3", "HOXA5", "HOXA7", "HOXA9", "HOXB8", "HSF1", "HSP90AA1", "HSPA1B", "HSPA9", "HSPB1", "IAPP", "ID2", "IFNA", "IFNB1", "IFNG", "IHH", "IKZF1", "IKZF3", "IL1RL2", "IL2", "IL2RA", "IL2RG", "IL3", "IL4", "IL4I1", "IL4I1B", "IL4RA", "IL5", "IL6", "IL7", "IL7R", "IL10", "IL12A","IL12B", "IL15", "IL15RA", "IL17A", "IL17D", "IL18", "IL20", "IL21", "IL23A", "IL27", "IL34", "IL36B", "ING5", "INHBA", "INPP4B", "INPP5D", "IRF1", "IRGM1", "ISG15", "ITGAM", "ITGB3", "ITPKB", "JAG1", "JAK3", "JUN", "KAT2A", "KAT5", "KAT6A", "KAT6B", "KAT7", "KDM1A", "KITL", "KLF10", "KLF13", "KLHL25", "L3MBTL1", "LAG3", "LCK", "LDB1", "LEF1", "LEO1", "LEP", "LGALS9", "LIF", "LILRB4A", "LILRB4B", "LMO2", "LOX", "LOXL3", "LRRC17", "LTF", "LYN", "MAFB", "MALT1", "MAPK14", "MDK", "MEAF6", "MED1", "MEF2C", "MEIS1", "MEIS2", "METTL3", "MIR125A", "MIR150", "MIR223", "MIR301", "MIR326", "MIR9718", "MITF", "MMP14", "MPL", "MTOR", "MTURN", "MYB", "MYC", "MYSM1", "NCKAP1L", "NDFIP1", "NEDD9", "NF1", "NFAM1", "NFKBIA", "NFKBID", "NFKBIZ", "NINJ1", "NKAP", "NLRP3", "NME1", "NME2", "NOTCH2", "NRARP", "OCSTAMP", "P4HTM", "PAF1", "PBRM1", "PCID2", "PCK1", "PF4", "PGLYRP1", "PGLYRP2", "PGLYRP3", "PGLYRP4", "PHF10", "PIAS3", "PIK3R1", "PIK3R6", "PILRB1", "PIRA1", "PIRA6", "PITHD1", "PLA2G3", "PNP", "POU4F1", "POU4F2", "PPARGC1B", "PPP2R3C", "PPP3CA", "PRDM1", "PRDM16", "PRDX2", "PRELID1", "PRKCA", "PRKCZ", "PRKDC", "PRMT1", "PRXL2A", "PTK2B", "PTN", "PTPN2", "PTPN6", "PTPRC", "QKI", "RAB7B", "RAG1", "RAG2", "RARA", "RARG", "RASGRP1", "RASSF2", "RB1", "RBFOX2", "RBM15", "RBP1", "RC3H1", "RC3H2", "RCOR1", "RHOA", "RHOH", "RIPK1", "RIPK2", "RNF41", "ROR2", "RORC", "RPTOR", "RUNX1", "RUNX3", "SART1", "SASH3", "SCIN", "SENP1", "SETD1A", "SFRP1", "SH2B3", "SH2D1B1", "SH2D1B2", "SH3RF1", "SHB", "SHH", "SIGLEC15", "SKIC8", "SKINT1", "SLAMF8", "SLC4A2", "SLC9B2", "SLC46A2", "SMAD7", "SMAP1", "SMARCA2", "SMARCA4", "SMARCB1", "SMARCC1", "SMARCC2", "SMARCD1", "SMARCD2", "SMARCD3", "SMARCE1", "SNAI2", "SOCS1", "SOCS5", "SOS1", "SOS2", "SOX4", "SOX12", "SOX13", "SPI1", "STAT1", "STAT3", "STAT5A", "STAT5B", "SYK", "TAL1", "TBX21", "TCF7", "TCIM", "TCTA", "TESC", "TESCL", "TESPA1", "TFE3", "TGFB1", "TGFBR2", "THOC5", "THPO", "TJP2", "TLR9", "TMEM64", "TMEM131L", "TMEM176A", "TMEM176B", "TMEM178", "TNF", "TNFAIP6", "TNFRSF11A", "TNFRSF11B", "TNFSF4", "TNFSF9", "TNFSF11", "TNFSF18", "TOB2", "TOX", "TRAF6", "TREM2", "TRIB1", "TSC22D1", "TWIST2", "TYROBP", "UBASH3B", "VNN1", "VSIR", "WNT10B", "XBP1", "XRCC6", "YPEL4", "ZAP70", "ZBTB1", "ZBTB7A", "ZBTB7B", "ZBTB46", "ZC3H8", "ZC3H12A", "ZEB1", "ZFP35", "ZFP36", "ZFP36L1", "ZFP36L2", "ZFP608", "ZFP609", "ZFP683", "ZFPM1", "ZMIZ1")
+
+#myeloid cell differentiation GO:0030099
+Myeloid <- c("ABCB10", "ABI1", "ACIN1", "ACTN1", "ACVR1B", "ACVR2A", "ADAM8", "ADAR", "ADD1", "ADGRF4",
+             "ADGRF5", "ADIPOQ", "AHSP", "ALAS1", "ALAS2", "ANK1", "ANKLE1", "ANKRD54", "ANXA2", "AP3B1",
+             "APC", "APCS", "APP", "ARID4A", "ASXL2", "ATP5IF1", "ATP6AP1", "B2M", "BAP1", "BATF",
+             "BATF2", "BATF3", "BCL6", "BLVRB", "BMP2", "BMP4", "BMYC", "BPGM", "BRD1", "C1QC",
+             "CALCR", "CAMK4", "CAR2", "CARTPT", "CASP3", "CASP8", "CBFA2T3", "CBFB", "CCL3", "CCL5",
+             "CCL9", "CCL19", "CCL21B", "CCN4", "CCR1", "CCR1L1", "CCR7", "CD4", "CD74", "CD81",
+             "CD101", "CD109", "CD300LF", "CDC73", "CDIN1", "CDK5RAP3", "CDK6", "CDKN1C", "CDKN2B", "CEACAM1",
+             "CEBPA", "CEBPB", "CEBPE", "CEBPG", "CFLAR", "CHMP5", "CHUK", "CIB1", "CITED2", "CLDN18",
+             "CLEC1B", "CLEC2D", "CLEC2G", "CLEC2I", "CLEC5A", "CLPB", "CNOT4", "CREB1", "CSF1", "CSF1R",
+             "CSF2", "CSF3", "CSF3R", "CTNNB1", "CTNNBIP1", "CTR9", "CUL4A", "DAB2", "DCSTAMP", "DHRS7B",
+             "DIAPH3", "DLK1", "DLL1", "DMTN", "DNASE2A", "DYRK3", "EEIG1", "EFNA2", "EIF2AK1", "EIF6",
+             "ENPP1", "EP300", "EPAS1", "EPB42", "EPHA2", "EPO", "ERCC2", "ERFE", "ESRRA", "ETS1",
+             "ETV2", "EVI2", "EVI2B", "EXOC6", "F2RL1", "FADD", "FAM20C", "FAM210B", "FARP2", "FAS",
+             "FASN", "FAXDC2", "FBN1", "FBXW7", "FCER1G", "FECH", "FES", "FGFR3", "FLI1", "FLNA",
+             "FLVCR1", "FOS", "FOSL2", "FOXO3", "FOXP1", "FSHB", "FSHR", "FSTL3", "G6PD2", "G6PDX",
+             "GAB2", "GAB3", "GABPA", "GATA1", "GATA2", "GATA3", "GBA1", "GFI1B", "GIMAP3", "GIMAP5",
+             "GLO1", "GMPR2", "GNAS", "GP1BA", "GP1BB", "GP5", "GP9", "GPC3", "GPR55", "GPR68",
+             "GPR137", "GPR137B", "GPR171", "GPR183", "GSK3B", "HAX1", "HBA1", "HBA2", "HBX", "HBB",
+             "HCLS1", "HDAC6", "HEATR3", "HEPH", "HHEX", "HIF1A", "HMGA1", "HMGB1", "HMGB2", "HMGB3",
+             "HOXA5", "HOXA7", "HOXA9", "HOXB7", "HOXB8", "HSCB", "HSF1", "HSPA1B", "HSPA9", "IAPP",
+             "ID2", "IFI203", "IFI203PS", "IFI206", "IFI207", "IFI208", "IFI209", "IFI213", "IFI214", "IFNA",
+             "IFNB1", "IFNG", "IGHE", "IGSF23", "IKZF1", "IL1RL1", "IL3", "IL3RA", "IL4", "IL5",
+             "IL12B", "IL15", "IL17A", "IL17C", "IL20", "IL23A", "IL25", "IL31RA", "IL33", "IL34",
+             "INHBA", "INPP4B", "INPP5D", "IREB2", "IRF4", "IRF8", "ISG15", "ITGAM", "ITGB3", "ITGB6",
+             "ITGB8", "ITPKB", "JAG1", "JAGN1", "JAK2", "JMJD6", "JUN", "JUNB", "KAT6A", "KAT7",
+             "KAT8", "KCNQ1", "KDM1A", "KIT", "KITLG", "KLF1", "KLF2", "KLF10", "KLF13", "KMT2E",
+             "L3MBTL1", "L3MBTL3", "LARGE1", "LBR", "LDB1", "LEF1", "LEO1", "LEP", "LIF", "LILRB4A",
+             "LILRB4B", "LIPA", "LMO2", "LOX", "LRRC17", "LRRK1", "LTBR", "LTF", "LYAR", "LYN",
+             "MAEA", "MAF", "MAFB", "MAPK14", "MB", "MED1", "MEF2C", "MEIS1", "MEIS2", "MFAP2",
+             "MFHAS1", "MIR34A", "MIR122", "MIR125A", "MIR144", "MIR146", "MIR223", "MIR451A", "MIR451B", "MIR9718",
+             "MITF", "MNDAL", "MPIG6B", "MPL", "MTOR", "MTURN", "MYB", "MYC", "MYD88", "MYH9",
+             "NAGLU", "NBEAL2", "NCAPG2", "NCKAP1L", "NCOA6", "NCOR1", "NDFIP1", "NDP", "NEDD9", "NEMP1",
+             "NF1", "NFATC1", "NFE2L1", "NFIX", "NFKBIA", "NINJ1", "NKAP", "NKX2-3", "NME1", "NME2",
+             "NOTCH2", "NR3C1", "NRROS", "OCSTAMP", "OSCAR", "OSTM1", "P4HTM", "PABPC4", "PAF1", "PAFAH1B1",
+             "PDE1B", "PF4", "PIAS3", "PIK3R1", "PILRB1", "PIP4K2A", "PIR", "PIRA1", "PIRA6", "PIRB",
+             "PITHD1", "PKNOX1", "PLA2G3", "PLA2G10", "PLCB1", "PLSCR1", "PML", "POU4F1", "POU4F2", "PPARG",
+             "PPARGC1B", "PPP3CA", "PRDM16", "PRDX3", "PRKCA", "PRKDC", "PRKX", "PRMT1", "PRTN3", "PRXL2A",
+             "PSEN1", "PSEN2", "PTBP3", "PTK2B", "PTPN2", "PTPN6", "PTPN11", "QKI", "RAB7B", "RABGAP1L",
+             "RAC1", "RAC2", "RACGAP1", "RARA", "RARG", "RASSF2", "RB1", "RBFOX2", "RBM15", "RBP1",
+             "RBPJ", "RCOR1", "RELB", "RHAG", "RHD", "RIPK1", "RNF41", "ROR2", "RPS6", "RPS14",
+             "RPS19", "RPTOR", "RUNX1", "SBNO2", "SCIN", "SENP1", "SETD1A", "SFRP1", "SFXN1", "SH2B3",
+             "SH2D1B1", "SH2D1B2", "SH3PXD2A", "SIGLEC15", "SIRT1", "SKIC8", "SLC1A5", "SLC4A1", "SLC4A2", "SLC9B2",
+             "SLC11A2", "SLC25A5", "SLC25A38", "SLC25A40", "SLC48A1", "SMAD5", "SMAP1", "SMARCA4", "SNX10", "SOCS1",
+             "SOX6", "SP1", "SP3", "SPI1", "SPIB", "SRC", "SRF", "SRP54A", "SRP54B", "SRP54C",
+             "STAP1", "STAT1", "STAT3", "STAT5A", "STAT5B", "TAL1", "TCEA1", "TCF3", "TCIRG1", "TCTA",
+             "TESC", "TESCL", "TET2", "TFE3", "TFRC", "TGFB1", "TGFBR2", "TGFBR3", "THOC5", "THPO",
+             "THRA", "TIFAB", "TIRAP", "TJP2", "TLR2", "TLR4", "TMEM14C", "TMEM64", "TMEM178", "TMOD3",
+             "TNF", "TNFAIP6", "TNFRSF11A", "TNFRSF11B", "TNFSF9", "TNFSF11", "TOB2", "TPM4", "TRAF6", "TREM2",
+             "TRF", "TRIB1", "TRIM10", "TRIM58", "TSPAN2", "TSPO2", "TUBB1", "TWIST2", "TYROBP", "UBA5",
+             "UBASH3B", "UBD", "UCP2", "UFL1", "VEGFA", "VPS33A", "VPS33B", "VPS54", "WASF2", "WDR1",
+             "YPEL4", "ZBTB7A", "ZBTB46", "ZFP36", "ZFP36L1", "ZFP385A", "ZFPM1")
+#positive regulation of cytokine production  GO:0001819
+Cytokine <- c("ABCC8", "ABL1", "ABL2", "ADAM8", "ADAM17", "ADCYAP1", "ADIPOQ", "ADORA2B", "ADRA2A", "AFAP1L2",
+              "AGER", "AGPAT1", "AGPAT2", "AGT", "AGTR1", "AGTR2", "AIF1", "AIM2", "AIRE", "AKAP12",
+              "AKIRIN2", "ALOX8", "ANKRD42", "ANXA1", "APOA2", "APP", "APPL1", "ARFGEF2", "ARHGEF2", "ARID5A",
+              "ARNT", "ARRDC4", "ATF2", "ATF4", "ATP6AP2", "B2M", "BATF", "BCL3", "BCL10", "BRCA1",
+              "BSG", "BTK", "BTNL2", "C1QTNF3", "C1QTNF4", "C3", "C3AR1", "C5AR1", "CADM1", "CAMP",
+              "CARD9", "CARD11", "CARMIL2", "CASP1", "CASP4", "CASP8", "CCBE1", "CCDC88B", "CCL1", "CCL2",
+              "CCL3", "CCL4", "CCL5", "CCL19", "CCL20", "CCM2L", "CCN1", "CCR2", "CCR5", "CCR7",
+              "CD1D1", "CD1D2", "CD2", "CD3E", "CD6", "CD14", "CD27", "CD28", "CD34", "CD36",
+              "CD40", "CD40LG", "CD46", "CD55", "CD55B", "CD74", "CD81", "CD83", "CD84", "CD160",
+              "CD200", "CD209B", "CD209D", "CD226", "CD244A", "CD274", "CD276", "CD300C2", "CEACAM20", "CEBPB",
+              "CEBPG", "CGAS", "CHI3L1", "CHIA1", "CHIL3", "CHIL4", "CHIL5", "CHIL6", "CHUK", "CLEC4E",
+              "CLEC4N", "CLEC5A", "CLEC7A", "CLEC9A", "CLNK", "CLU", "CREB1", "CRHR2", "CRLF2", "CRTAM",
+              "CSF1R", "CSF2", "CX3CL1", "CXCL17", "CYBA", "CYBB", "CYP1B1", "CYP2J6", "CYRIB", "D1PAS1",
+              "DDIT3", "DDX1", "DDX3X", "DDX21", "DEFB25", "DENND1B", "DHX9", "DHX33", "DHX36", "DHX58",
+              "DLK1", "DRD2", "EGR1", "EIF2AK2", "EIF2AK3", "ELANE", "EPHB2", "EPX", "EREG", "F2R",
+              "F2RL1", "F3", "FADD", "FCER1A", "FCER1G", "FCGR2B", "FCGR3", "FCNA", "FCNB", "FERMT1",
+              "FFAR2", "FFAR3", "FGR", "FLOT1", "FLT3", "FLT4", "FOXP1", "FOXP3", "FRMD8", "FZD5",
+              "G3BP1", "GAPDH", "GARIN5A", "GATA3", "GATA4", "GBP5", "GDF2", "GIMAP3", "GIMAP5", "GLMN",
+              "GPRC5B", "GPSM3", "GRK2", "GSDMA3", "GSDMD", "H2-M3", "H2-Q9", "H2-T23", "HAVCR2", "HC",
+              "HDAC2", "HEG1", "HGF", "HIF1A", "HILPDA", "HK1", "HMGB1", "HMGB2", "HPSE", "HRAS",
+              "HSP90AA1", "HSPA1B", "HSPB1", "HSPD1", "HTR2A", "HTR2B", "HYAL2", "ICOSL", "IDO1", "IFIH1",
+              "IFNAR1", "IFNB1", "IFNG", "IFNGR1", "IGHD", "IKBKE", "IL1A", "IL1B", "IL1R1", "IL1RAP",
+              "IL1RL1", "IL1RL2", "IL2", "IL4", "IL4RA", "IL6", "IL6RA", "IL7", "IL9", "IL10",
+              "IL12A", "IL12B", "IL12RB1", "IL12RB2", "IL13", "IL15", "IL16", "IL17A", "IL17B", "IL17C",
+              "IL17D", "IL17F", "IL17RA", "IL17RB", "IL17RC", "IL18", "IL18R1", "IL20RB", "IL21", "IL23A",
+              "IL23R", "IL27", "IL27RA", "IL33", "IL36A", "IL36B", "IL36G", "INAVA", "INS1", "INS2",
+              "IRAK1", "IRAK3", "IRF1", "IRF3", "IRF4", "IRF5", "IRF7", "IRF8", "ISG15", "ISL1",
+              "ITK", "JAK2", "KAT2A", "KIT", "KLRE1", "KLRH1", "KLRK1", "KPNA2", "KPNA6", "LACC1",
+              "LAMTOR5", "LAPTM5", "LBP", "LEP", "LGALS9", "LILRA5", "LPL", "LRP1", "LRRFIP2", "LRRK2",
+              "LTA", "LTB", "LUM", "LURAP1", "LY9", "LY96", "MALT1", "MAP3K7", "MAPK9", "MAPK11",
+              "MAPK13", "MAPK14", "MAPKAPK2", "MAVS", "MBP", "MCOLN2", "MDK", "MEFV", "MIF", "MIR21",
+              "MIR155", "MIR324", "MMP8", "MMP12", "MNDA", "MYB", "MYD88", "NAIP5", "NCL", "NFAM1",
+              "NFATC4", "NLRC4", "NLRP1", "NLRP3", "NOD1", "NOD2", "NOS2", "NR1H4", "NR4A3", "NRAS",
+              "OAS1", "OAS2", "OAS3", "OPTN", "OSM", "P2RX7", "P2RY2", "PANX1", "PANX2", "PANX3",
+              "PARK7", "PDE4B", "PDE4D", "PELI1", "PHB1", "PIBF1", "PIK3R1", "PLA2G3", "PLA2R1", "PLCB1",
+              "PLCG2", "PNP", "POLR3A", "POLR3B", "POLR3C", "POLR3D", "POLR3F", "POLR3G", "POSTN", "POU2AF1",
+              "POU2F2", "PQBP1", "PRG2", "PRG3", "PRKCQ", "PRKCZ", "PRKD2", "PSEN1", "PSG22", "PTAFR",
+              "PTEN", "PTGER4", "PTGS2", "PTPN11", "PTPN22", "PTPRC", "PTPRJ", "PYCARD", "RAB1A", "RAB2B",
+              "RAB7B", "RAD21", "RARA", "RASGRP1", "RBM47", "REL", "RELA", "RFTN1", "RGCC", "RIGI",
+              "RIOK3", "RIPK1", "RIPK2", "RNF135", "ROCK2", "RORA", "RPS3", "RSAD2", "RTN4", "RUNX1",
+              "S100A13", "SASH3", "SCAMP5", "SCIMP", "SCRIB", "SELENOK", "SEMA7A", "SERPINB7", "SERPINE1", "SERPINF2",
+              "SETD2", "SETD4", "SIRT1", "SLAMF1", "SLAMF6", "SLC7A5", "SLC11A1", "SMAD3", "SOD1", "SORL1",
+              "SphK1", "SphK2", "SPN", "SPON2", "SPTBN1", "SRC", "STAT1", "STAT3", "STAT5A", "STAT5B",
+              "STING1", "STMP1", "STOML2", "SULF1", "SULF2", "SYK", "TANK", "TARM1", "TBC1D23", "TBK1",
+              "TBX21", "TEK", "TGFB1", "THBS1", "TICAM1", "TICAM2", "TIGIT", "TIRAP", "TLR1", "TLR2",
+              "TLR3", "TLR4", "TLR5", "TLR6", "TLR7", "TLR8", "TLR9", "TMED10", "TMED10-PS", "TMEM106A",
+              "TMF1", "TNF", "TNFRSF1A", "TNFRSF8", "TNFRSF13C", "TNFRSF14", "TNFSF4", "TNFSF9", "TNFSF15", "TNFSF18",
+              "TOMM70A", "TRADD", "TRAF2", "TRAF3", "TRAF3IP3", "TRAF6", "TREM2", "TRIM6", "TRIM15", "TRIM27",
+              "TRIM32", "TRIM56", "TRIM65", "TRPV4", "TSLP", "TUSC2", "TUT4", "TWIST1", "TXK", "TYK2",
+              "TYROBP", "UAP1", "UCN", "ULBP1", "UNC93B1", "USP22", "USP50", "VEGFD", "VTCN1", "WNT3A",
+              "WNT5A", "WNT11", "XBP1", "XCL1", "XIAP", "ZBTB7B", "ZBTB20", "ZC3HAV1", "ZCCHC3", "ZFP580", "ZFPm1",
+              "ZP3")
+#positive regulation of cell adhesion GO:0045785
+Adhesion <- c()
+```
+
+
+
+##时序密度图
+```{r}
+#CRvsNR 时序密度图
+data<- data.frame(Pseudotime = cds$Pseudotime, condition = cds$condition)
+ggplot(data, aes(x = Pseudotime, fill = condition)) +
+    geom_density(alpha = 0.7) +
+    labs(title = "Density Plot", x = "Pseudotime", y = "Density") +
+    theme_minimal()+
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.title.x = element_text(size = 12, face = "bold"),
+          axis.title.y = element_text(size = 12, face = "bold"),
+          axis.line = element_line(color = "black", size = 0.5),
+          axis.ticks = element_line(color = "black"))+
+    scale_fill_manual(values = c("#FF9933", "#CC3333"))+
+    guides(fill = guide_legend(title = ""))#不显示legend title
+#柱状图
+ggplot(data, aes(x = condition, y = Pseudotime, fill = condition)) +
+    geom_boxplot(alpha = 0.8) +
+    theme_minimal() +
+    coord_flip() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank()) +
+    scale_fill_manual(values = c("#FF9933", "#CC3333"))
+
+# 执行 t 检验
+group1 <- data[data$condition == "NR", "Pseudotime"]
+group2 <- data[data$condition == "CR", "Pseudotime"]
+t.test(group1, group2)
+#'#033E60', '#7E1701'
+#分化CytoTRACE------------------------
+library(ncdf4)
+library(HiClimR)
+library(Rfast)
+suppressMessages(library(CytoTRACE2))
+# 表达矩阵 count
+Mye1 <- Mye1[, Mye1@meta.data$Celltype != 'Early Ery']
+Exp = GetAssayData(object = Mye1, assay = "RNA")
+Exp[1:3,1:3]
+dim(Exp)
+# 表型文件
+Meta = data.frame(phenotype1=rownames(Mye1@meta.data),phenotype2 = Mye1@meta.data$Celltype1,
+                  Celltype = Mye1@meta.data$Celltype,condition = Mye1@meta.data$condition,
+                  prediction = Mye1@meta.data$prediction)
+rownames(Meta) <- Meta$phenotype1
+Meta$phenotype1 <- NULL
+cytotrace2_result <- cytotrace2(Exp,
+                                species = "human",  # 默认是 鼠
+                                # slot_type = "counts",  # 默认 counts 或 data
+                                is_seurat = FALSE, # 输入是否是 Seurat 对象
+                                full_model = FALSE, # 使用17个模型的完整集合,默认5个模型的简化集合
+                                ncores = 10)
+cytotrace2_result[1:3,1:5]
+data <- cbind(cytotrace2_result, Meta)
+#绘制柱状图
+data$phenotype2 <- factor(data$phenotype2, levels = c("HSC/MPP","GMP","MEP","cDC","pDC","CD14 Mono","CD16 Mono",
+                                                  "HSC/MPP-like", "GMP-like","MEP-like","cDC-like","pDC-like","CD14 Mono-like","CD16 Mono-like"
+                                                  ))
+data$Celltype <- factor(data$Celltype, levels = c("HSC/MPP","GMP","MEP","cDC","pDC","CD14 Mono","CD16 Mono"))
+
+ggplot(data, aes(x = prediction, y = CytoTRACE2_Score, color = prediction)) +
+  geom_boxplot(outlier.shape = NA, median.color = "black", median.size = 1.25, size = 1.1) +
+  labs(x = "Celltype",
+       y = "CytoTRACE") +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(color = "black"),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.ticks = element_line())
+
+```
+
+
+###良恶TF
+```{r}
+#提取
+Mye <- scRNA[,scRNA@meta.data$Celltype %in% c("HSC/MPP","GMP","MEP","CD14 Mono","CD16 Mono","cDC","pDC","Early Ery")]
+#去level
+Idents(Mye) <- 'Celltype'
+Mye$Celltype=factor(Mye$Celltype,level=unique(Mye$Celltype))
+Mye$Celltype1 <- Mye$Celltype
+Mye$Celltype1 <- ifelse(Mye$prediction == "malignant", paste0(Mye$Celltype, "-like"), paste0(Mye$Celltype, ""))
+table(Mye$Celltype1)
+Mye$Celltype1 <- factor(Mye$Celltype1, levels = c("HSC/MPP","HSC/MPP-like",
+        "GMP","GMP-like","MEP","MEP-like","CD14 Mono","CD14 Mono-like","CD16 Mono","CD16 Mono-like",
+        "cDC","cDC-like","pDC","pDC-like","Early Ery","Early Ery-like"), ordered = TRUE)
+Idents(Mye) <- 'Celltype1'
+DefaultAssay(Mye2) <- "Pro"
+#热图
+Mye1 <- Mye2[,Mye2@meta.data$condition %in% c("CR","NR")]
+Idents(Mye1) <- 'prediction'
+markers <- FindAllMarkers(object = Mye1, only.pos = F)
+write.csv(markers,file = "../HSCTRR/HSC/TF/marker/IFmarker无HC.csv")
+Idents(Mye1) <- 'Celltype1'
+markers <- FindAllMarkers(object = Mye1, only.pos = F)
+write.csv(markers,file = "../HSCTRR/HSC/TF/marker/IFtype无HC.csv")
+```
+
+
+```{r}
+
+mal <- scRNA[,scRNA@meta.data$prediction2 %in% c("malignant")]
+
+t <- as.matrix(prop.table(table(mal$orig.ident, mal$Celltype1), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+p$Disease <- factor(p$Disease,c("HSC/MPP","HSC/MPP_like","GMP","GMP_like","EBM","EBM_like","MEP","MEP_like","ERP", "ERP_like", "early Ery","late Ery", "Pro Mono","Pro Mono_like", "CD14 Mono","CD14 Mono_like", "CD16 Mono","CD16 Mono_like","DC","DC_like","T", "NK", "B", "Plasma"))
+p <- p[complete.cases(p$proportion), ]
+#p$cluster <- factor(p$cluster, levels = c("HSC/MPP_like", "GMP_like","EBM_like","MEP_like","ERP_like","Pro Mono_like", "CD14 Mono_like", "CD16 Mono_like","DC_like"))
+#p$Disease <- factor(p$Disease, levels = c("normal", "malignant"))
+ggplot(p, aes(cluster, proportion, fill = Disease)) +
+  geom_bar(stat = "identity", position = "fill") +
+  ggtitle("") +
+  theme_bw() +
+  theme(
+    axis.ticks.length = unit(0.1, 'cm'),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 60, hjust = 1, size = 8),
+    legend.position = "right",
+    legend.text = element_text(size = 10),
+    axis.title = element_text(size = 10)
+  ) +guides(fill = guide_legend(title = NULL))
+
+#+scale_fill_manual(values = c('#FF9933','#027411','#CC3333','#336699'))
+
+#corlor <- c('#CC3333','#FF9933',"#CC9999",'#B94F62',"#905987","#FF9999",'#F25454',"#CC6600","#339966","#93a95d","#6cb25e","#6699CC","#669999","#b178a3",'#814FB9')
+
+nor <- scRNA[,scRNA@meta.data$prediction2 %in% c("normal")]
+t <- as.matrix(prop.table(table(nor$orig.ident, nor$Celltype1), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+p$Disease <- factor(p$Disease,c("HSC/MPP","HSC/MPP_like","GMP","GMP_like","EBM","EBM_like","MEP","MEP_like","ERP", "ERP_like", "early Ery","late Ery", "Pro Mono","Pro Mono_like", "CD14 Mono","CD14 Mono_like", "CD16 Mono","CD16 Mono_like","DC","DC_like","T", "NK", "B", "Plasma"))
+p <- p[complete.cases(p$proportion), ]
+#p$cluster <- factor(p$cluster, levels = c("HSC/MPP_like", "GMP_like","EBM_like","MEP_like","ERP_like","Pro Mono_like", "CD14 Mono_like", "CD16 Mono_like","DC_like"))
+#p$Disease <- factor(p$Disease, levels = c("normal", "malignant"))
+ggplot(p, aes(cluster, proportion, fill = Disease)) +
+  geom_bar(stat = "identity", position = "fill") +
+  ggtitle("") +
+  theme_bw() +
+  theme(
+    axis.ticks.length = unit(0.1, 'cm'),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 60, hjust = 1, size = 8),
+    legend.position = "right",
+    legend.text = element_text(size = 10),
+    axis.title = element_text(size = 10)
+  ) +guides(fill = guide_legend(title = NULL))
+
+t <- as.matrix(prop.table(table(scRNA$orig.ident,scRNA$Celltype1), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+p$Disease <- factor(p$Disease,c("HSC/MPP","HSC/MPP_like","GMP","GMP_like","EBM","EBM_like","MEP","MEP_like","ERP", "ERP_like", "early Ery","late Ery", "Pro Mono","Pro Mono_like", "CD14 Mono","CD14 Mono_like", "CD16 Mono","CD16 Mono_like","DC","DC_like","T", "NK", "B", "Plasma"))
+p <- p[complete.cases(p$proportion), ]
+ggplot(p, aes(cluster, proportion, fill = Disease)) +
+  geom_bar(stat = "identity", position = "fill") +
+  ggtitle("") +
+  theme_bw() +
+  theme(
+    axis.ticks.length = unit(0.1, 'cm'),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 60, hjust = 1, size = 8),
+    legend.position = "right",
+    legend.text = element_text(size = 10),
+    axis.title = element_text(size = 10)
+  ) +guides(fill = guide_legend(title = NULL))+coord_flip()
+```
+
+
+#DC细胞重分聚类
+```{r}
+MD <- scRNA[,scRNA@meta.data$Celltype %in% c("MD")]
+MD <- NormalizeData(MD) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+MD <- RunPCA(MD, verbose = F)
+#去批次
+MD <- RunHarmony(MD,group.by.vars = "orig.ident")
+#维度
+ElbowPlot(MD, ndims = 50)
+pct <- MD[["pca"]]@stdev / sum(MD[["pca"]]@stdev) * 100
+cumu <- cumsum(pct)
+co1 <- which(cumu > 90 & pct < 5)[1]
+co1
+co2 <- sort(which((pct[1:length(pct) - 1] - pct[2:length(pct)]) > 0.1), decreasing = T)[1] + 1
+co2
+pcs <- min(co1, co2)
+pcs
+plot_df <- data.frame(pct = pct,
+                      cumu = cumu,
+                      rank = 1:length(pct))
+ggplot(plot_df, aes(cumu, pct, label = rank, color = rank > pcs)) +
+  geom_text() +
+  geom_vline(xintercept = 90, color = "grey") +
+  geom_hline(yintercept = min(pct[pct > 5]), color = "grey") +
+  theme_bw()
+rm(pct,cumu,co1,co2,pcs,plot_df)
+
+MD <- MD %>% RunUMAP(dims=1:11,reduction = "harmony")
+DimPlot(MD, split.by = 'orig.ident',label = T,ncol = 8)
+MD <- FindNeighbors(MD, dims=1:11,reduction = "harmony")
+saveRDS(MD,'MD.rds')
+#clustree
+MD1 <- FindClusters(MD, resolution = c(seq(.1,1,.1)))
+clustree(MD1@meta.data, prefix = "RNA_snn_res.")
+MD <- FindClusters(MD,resolution = 0.2)
+DimPlot(MD, reduction = "umap", label = TRUE)
+MD.markers <- FindAllMarkers(MD, only.pos = TRUE, min.pct = 0.25, logfc.thresh = 0.25)
+MD.top30 <- data.frame(MD.markers %>% group_by(cluster) %>% slice_max(n = 30, order_by = avg_log2FC))
+write.csv(MD.top30,file = "MD.top30.csv")
+write.csv(MD.markers,file = "MD.allmarkers.csv")
+#MD细胞命名
+cluster_names <- c("0" = "cDC","1" = "cDC","2" = "pDC", "3" = "Pro DC","4" = "Pro DC","5" = "cDC")
+MD$Celltype <- cluster_names[MD$seurat_clusters]
+MD$Celltype <- 'DC'
+#分类
+common_columns <- which(rownames(scRNA@meta.data) %in% rownames(MD@meta.data))
+length(common_columns)
+scRNA@meta.data$Celltype[common_columns] <- MD$Celltype
+```
+#HSC分类
+```{r}
+#setwd('./HSCTRR/HSC/')
+HSC <- HSC[,!HSC@meta.data$seurat_clusters %in% c(6,7)]
+#HSC <- scRNA[,scRNA@meta.data$Celltype %in% c("HSC/MPP")]
+HSC <- NormalizeData(HSC) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+HSC <- RunPCA(HSC, verbose = F)
+#去批次
+HSC <- RunHarmony(HSC,group.by.vars = "orig.ident")
+HSC <- HSC %>% RunUMAP(dims=1:20,reduction = "harmony")
+DimPlot(HSC, split.by = 'orig.ident',label = T,ncol = 8)
+HSC <- FindNeighbors(HSC, dims=1:20,reduction = "harmony")
+saveRDS(HSC,'HSC.rds')
+#clustree
+HSC1 <- FindClusters(HSC, resolution = c(seq(.1,1,.1)))
+clustree(HSC1@meta.data, prefix = "RNA_snn_res.")
+HSC <- FindClusters(HSC,resolution = 0.2)
+cluster_names <- c("0" = "HSC/MPP1","1" = "HSC/MPP4","2" = "HSC/MPP2","3" = "HSC/MPP3","4" = "HSC/MPP5")
+HSC$Celltype <- cluster_names[HSC$seurat_clusters]
+
+#细胞周期
+s.genes <- cc.genes.updated.2019$s.genes
+g2m.genes <- cc.genes.updated.2019$g2m.genes
+HSC <- CellCycleScoring(HSC, s.features = s.genes, g2m.features = g2m.genes)
+DimPlot(HSC, group.by = "Phase", label = TRUE)
+```
+
+##寻找差异基因
+```{r}
+HSC.markers <- FindAllMarkers(HSC, only.pos = TRUE, min.pct = 0.25, logfc.threshold =0.25)
+HSC.top30 <- data.frame(HSC.markers %>% group_by(cluster) %>% slice_max(n = 30, order_by = avg_log2FC))
+write.csv(HSC.top30,file = "HSC.top30.csv")
+write.csv(HSC.markers,file = "HSC.allmarkers.csv")
+
+Idents(HSC) <- 'condition'
+HSC.markers <- FindAllMarkers(HSC, only.pos = TRUE, min.pct = 0.25, logfc.threshold =0.25)
+HSC.top30 <- data.frame(HSC.markers %>% group_by(cluster) %>% slice_max(n = 30, order_by = avg_log2FC))
+write.csv(HSC.top30,file = "HSC.condition30.csv")
+write.csv(HSC.markers,file = "HSC.conditionall.csv")
+getwd()
+```
+##HSC 绘图
+```{r}
+#调整
+cluster_names <- c("HSC/MPP1" = "HSC/MPP-1","HSC/MPP2" = "HSC/MPP-2", "HSC/MPP3" = "HSC/MPP-3","HSC/MPP4" =  "HSC/MPP-4"
+)
+HSC1$Celltype1 <- cluster_names[HSC1$Celltype]
+HSC$prediction[HSC$prediction == "malignant"] <- "Malignant"
+HSC$prediction[HSC$prediction == "normal"] <- "Normal"
+HSC$prediction <- factor(HSC$prediction, levels = c("Normal","Malignant"))
+HSC$Celltype1 <- factor(HSC$Celltype1, levels = c("HSC/MPP-1","HSC/MPP-2","HSC/MPP-3","HSC/MPP-4"))
+DimPlot(HSC, reduction = "umap", label = TRUE,label.size = 3)+theme(text = element_text(size = 10))
+DimPlot(HSC, group.by ="prediction", label = TRUE,label.size = 3)+theme(text = element_text(size = 10))
+#umap
+DimPlot(HSC,cols = c('#F19E9C','#EF7F51','#CF90EC','#78D3AD'),label = T)
+
+DimPlot(HSC,group.by = 'prediction',cols = c('#C0C0C0','#FF0000'),label = T)
+
+HSC1$condition1 <- factor(HSC1$condition1, levels = c("Before treatment","After treatment"), ordered = TRUE)
+FeaturePlot(HSC1,features = c('ENO1'),split.by = 'condition1',cols = c("lightgrey", "#9FA3D8", "#1926D8"))
+
+HSC$Phase <- factor(HSC$Phase, levels = c("G1", "S", "G2M"))
+DimPlot(HSC, group.by = 'Phase',reduction = "umap", label = F,label.size = 3,cols =c('#A49F9F',"#FF9999","#FA0000") )
+
+HSC$condition <- factor(HSC$condition, levels = c("HC", "CR", "NR"))
+HSC$prediction <- gsub("normal", "Normal", HSC$prediction)
+HSC$prediction <- gsub("normal", "Normal", HSC$prediction)
+
+DimPlot(HSC,split.by = 'condition',group.by = 'Celltype',label = T,label.size = 3)+theme(text = element_text(size = 10))
+#面积堆积图按细胞类型
+t <- as.matrix(prop.table(table(HSC$prediction,HSC$Celltype1), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+ylab("Proportion(%)")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 10),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 10))+
+  guides(fill=guide_legend(title=NULL))+scale_fill_manual(values=c('#C0C0C0','#FF0000'))
+
+
+#面积堆积图按细胞状态
+t <- as.matrix(prop.table(table(HSC$condition,HSC$Celltype1), margin = 2)*100)
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+p$cluster <- factor(p$cluster, levels = c("HC","CR","NR"))
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+    geom_bar(stat="identity",position="fill")+
+    ggtitle("")+ylab("Proportion(%)") +
+    theme_bw()+
+    theme(axis.ticks.length=unit(0.1,'cm'),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          text = element_text(size = 10),
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1,  size = 10))+
+    guides(fill=guide_legend(title=NULL))+scale_fill_manual(values=c('#75A4C9', '#EB8ABA', '#9584C1'))
+#热图
+gene <- c("CAPG","S100A11", "SLC2A5", "LSP1","EVL", "SELL", "IFITM1","CD300A","IGHM","TMSB10",
+  "CXCL2","CXCL3", "CXCL8","AREG","S100B", "LMNA", "NFKBIA","NFKB1","DUSP2", "MAFF", 
+  "IGLL1", "TYMS", "C1QTNF4", "MGST1", "STMN1", "FABP5", "CDCA7", "CLEC11A", "MCM7", "GAPDH",
+  "SNHG29", "EEF1G","GAS5","SNHG6","EIF4A1","SNHG5","NME2","SNHG32",      "TOMM6","ATP5PO")
+DoHeatmap(HSC, 
+          features = gene,   
+          group.by = "Celltype1",group.colors =c('#F19E9C','#EF7F51','#CF90EC','#78D3AD') )+scale_fill_gradientn(colors = c('#001AAE',"white",'#FEB121'))+#'#001AAE',"white",'#FEB121'
+  theme(axis.text.y = element_text( size = 6),axis.text.x = element_text( size = 6))#"navy","white","firebrick3"
+
+#去掉level影响
+HSC$seurat_clusters=factor(HSC$seurat_clusters,level=unique(HSC$seurat_clusters))
+#再加上levels
+HSC$seurat_clusters <- factor(HSC$seurat_clusters, levels = c("0","1","2","3","4","5","8"))
+```
+
+##HSC 绘图富集
+```{r}
+#富集后只做想要的通路
+R3fu=read_excel("./IMpi.xlsx")
+selected_pathways <- gg[gg$Description %in% R3fu$Description,]
+enriched_result <- new("enrichResult", result = selected_pathways)
+
+ggplot(enriched_result)+
+  geom_col(aes(x=Count,y=reorder(Description,Count),fill=pvalue),color='black',width = 0.6)+
+  geom_text(aes(x=Count,y=reorder(Description,Count),label =Count),hjust=-0.5,vjust =0.5)+#添加Count值标注
+  scale_fill_gradientn(colours = c('firebrick','steelblue'))+#设置颜色   #'firebrick','lightblue'
+  theme_minimal()+
+  scale_y_discrete(expand = c(0,0))+
+  geom_vline(xintercept = 0,lwd=0.1,color="black")+
+  theme(legend.position = 'right')+#设置图例位置
+  ylab(NULL)+
+  theme(axis.text.x = element_text(angle = 0,hjust = 1,vjust =0.5,size = 8,face = 'bold',family = 'serif'),
+        axis.text.y = element_text(angle = 0,size = 10,face = 'plain',family = 'serif'))
+
+enriched_result %>% arrange(desc(Count)) %>% barplot(.,  x = "Count", #or "GeneRatio"
+                                               color = "p.adjust", #or "p.adjust","qvalue","pvalue"
+                                               showCategory = 25,#显示前top20
+                                               font.size = 8,
+                                               title = "IM_1 Go biological process",
+                                               label_format = 50 ,#超过30个字符串换行
+)+scale_fill_gradient(low = "#336699", high = "#C6E1F1", space = "Lab", 
+                      na.value = "grey50", guide = "colourbar", aesthetics = "fill" ) 
+
+#富集条形图
+library(readxl)
+data <- read_excel('fuji.xlsx')
+library(ggplot2)
+# 设置颜色
+HSC1 <- data[14:17,]
+HSC1$Cluster
+HSC1$Description <- factor(HSC1$Description, levels = rev(unique(HSC1$Description)))
+#"#E41A1C","#A5BF05","#38BFEE","#D664F4"
+# 绘制气泡图
+ggplot(HSC1, aes(x = Count, y = Description, fill = -log10(pvalue))) +
+  geom_bar(stat = "identity") +
+  scale_fill_gradient(low = "#D7BAE0", high = "#D664F4") +
+  scale_x_continuous(breaks = seq(0, 23, by = 5)) +  # 设置x轴的刻度
+  scale_y_discrete() +  # 设置y轴的刻度
+  theme_minimal() +
+  labs(x = "Count", y = "Description", fill = "-log10(pvalue)") +
+  theme(legend.position = "bottom",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_rect(color = "black", fill = NA),
+        axis.ticks = element_line(size = 0.5)) 
+
+
+```
+
+#GMP
+```{r}
+
+
+GMP <- scRNA[,scRNA@meta.data$Celltype %in% c("GMP")]
+GMP <- scRNA[,scRNA@meta.data$Celltype %in% c("GMP")]
+GMP <- NormalizeData(GMP) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+GMP <- RunPCA(GMP, verbose = F)
+#去批次
+GMP <- RunHarmony(GMP,group.by.vars = "orig.ident")
+GMP <- GMP %>% RunUMAP(dims=1:8,reduction = "harmony")
+DimPlot(GMP, label = T)
+GMP <- FindNeighbors(GMP, dims=1:8,reduction = "harmony")
+#clustree
+GMP1 <- FindClusters(GMP, resolution = c(seq(.1,1,.1)))
+clustree(GMP1@meta.data, prefix = "RNA_snn_res.")
+GMP <- FindClusters(GMP,resolution = 0.1)
+DimPlot(GMP, reduction = "umap",label = TRUE)
+#定义
+cluster_names <- c("0" = "GMP1","1" = "GMP2","2" = "GMP3", "3" = "GMP4","4" = "GMP2")
+GMP$Celltype <- cluster_names[GMP$seurat_clusters]
+Idents(GMP) <- 'Celltype'
+GMP$Celltype <- factor(GMP$Celltype, levels = c("GMP1","GMP2","GMP3","GMP4"), ordered = TRUE)
+#基因差异
+GMP.markers <- FindAllMarkers(GMP, only.pos = TRUE, min.pct = 0.25, logfc.threshB = 0.25)
+write.csv(GMP.markers,file = "./富集/GMP.allmarkers.csv")
+```
+
+# HSC静止活动数据
+```{r}
+QAdata <- read.csv("/data5/tiany/HSCTAML/HSCTRR/ENO1Bulk/Activated_VS_QuiescentLTHSC.csv",header = T)
+
+QAdataupdown<-subset(QAdata,abs(logFC)>2 &abs(FDR)<0.01&genename!="None")
+
+QAdataup<-subset(QAdata,logFC>2 &abs(FDR)<0.05 &genename!="None")
+
+QAdatadown<-subset(QAdata,logFC<as.numeric(-2) &abs(FDR)<0.05&genename!="None")
+QAdataupdown$type<-ifelse(QAdataupdown$logFC<0,"AvsQ_Down","AvsQ_UP")
+
+library(GSVA)
+genesets2_AQ<-split(QAdataupdown$genename, QAdataupdown$type)
+#构建矩阵，单细胞
+Idents(HSC) <- 'Celltype'
+expr <- AverageExpression(HSC, assays = "RNA", slot = "data")[[1]]
+expr <- expr[rowSums(expr)>0,]  #过滤细胞表达量全为零的基因
+expr <- as.matrix(expr)
+head(expr)
+#bulk 构建矩阵用FPKM
+colnames(DEG)
+expr <- DEG[,c("M13_NC-RNA_1_fpkm","M13_NC-RNA_2_fpkm",  
+               "M13_NC-RNA_3_fpkm","M13_sh2-RNA_1_fpkm" ,
+               "M13_sh2-RNA_2_fpkm","M13_sh2-RNA_3_fpkm")]
+colnames(expr) <- c('CON1','CON2','CON3','ENO1_KO1','ENO1_KO2','ENO1_KO3')
+expr <- as.matrix(expr)
+
+gsva.res_AQ<- gsva(expr, genesets2_AQ, method="ssgsea") 
+
+gsva.res_AQt<-t(gsva.res_AQ) %>% as.data.frame()
+rownames_to_column(gsva.res_AQt)->gsva.res_AQt
+#计算差异
+Con <- gsva.res_AQt[1:3, c("AvsQ_Down", "AvsQ_UP")]
+ENO1 <- gsva.res_AQt[4:6, c("AvsQ_Down", "AvsQ_UP")]
+# 执行t检验
+t_test_result <- t.test(Con$AvsQ_Down, ENO1$AvsQ_Down)
+
+ggplot(gsva.res_AQt)+geom_point(aes(x=AvsQ_UP,y=AvsQ_Down,color=rowname),size=3)+
+  scale_color_manual(values = c("#D35400","#E67E22","#E59866","#82E0AA","#2ECC71","#28B463"))+
+  labs(x = "LT-HSC activate score", y = "LT-HSC quite score") +
+  theme_minimal() +
+  theme(
+    panel.background = element_blank(),  # 移除背景颜色
+    panel.grid.major = element_blank(),  # 移除主要网格线
+    panel.grid.minor = element_blank(),  # 移除次要网格线
+    axis.line = element_line(colour = "black"),# 添加x和y轴
+    axis.ticks = element_line(colour = "black") # 添加刻度线
+  )+guides(color = guide_legend(title = NULL))+  # 移除图例标题
+  geom_text(label = paste("p =", round(t_test_result, 4)), hjust = 1, vjust = 0, size = 4)
+
+```
+
+
+##GMP绘图
+```{r}
+#面积堆积图按细胞类型
+t <- as.matrix(prop.table(table(GMP$prediction,GMP$Celltype), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()
+#面积堆积图按细胞状态
+t <- as.matrix(prop.table(table(GMP$condition,GMP$Celltype), margin = 2)*100)
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+p$cluster <- factor(p$cluster, levels = c("HC","CR","NR"))
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  guides(fill=guide_legend(title=NULL))+scale_fill_manual(values=c('#336699','#FF9933','#CC3333'))
+#绘图
+library(pheatmap)
+gene <- c("ENO1","S100A8", "S100A9", "S100A6", "S100A4","LYZ",
+"C1QTNF4", "EEF1A1", "IFITM3","EEF2","NPM1",
+"MKI67", "TOP2A", "HIST1H3B", "HIST1H1B","HIST1H4C")
+DotPlot(GMP,features = gene)+
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+
+```
+
+
+#Tcell
+```{r}
+Tcell <- scRNA[,scRNA@meta.data$Celltype %in% c("CD4 T","CD8 T")]
+Tcell <- Tcell[!grepl("^HBB|^HBA|^HBD|^HBC|^MT-|^RPS|^RPL|^MTRNR", rownames(Tcell)), ]
+Tcell <- NormalizeData(Tcell) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+Tcell <- RunPCA(Tcell, verbose = F)
+#去批次
+Tcell <- RunHarmony(Tcell,group.by.vars = "orig.ident")
+#维度
+ElbowPlot(Tcell, ndims = 50)
+pct <- Tcell[["pca"]]@stdev / sum(Tcell[["pca"]]@stdev) * 100
+cumu <- cumsum(pct)
+co1 <- which(cumu > 90 & pct < 5)[1]
+co1
+co2 <- sort(which((pct[1:length(pct) - 1] - pct[2:length(pct)]) > 0.1), decreasing = T)[1] + 1
+co2
+pcs <- min(co1, co2)
+pcs
+plot_df <- data.frame(pct = pct,
+                      cumu = cumu,
+                      rank = 1:length(pct))
+ggplot(plot_df, aes(cumu, pct, label = rank, color = rank > pcs)) +
+  geom_text() +
+  geom_vline(xintercept = 90, color = "grey") +
+  geom_hline(yintercept = min(pct[pct > 5]), color = "grey") +
+  theme_bw()
+rm(pct,cumu,co1,co2,pcs,plot_df)
+
+Tcell3 <- Tcell %>% RunUMAP(dims=1:15,reduction = "harmony")
+DimPlot(Tcell, split.by = 'orig.ident',label = T,ncol = 8)
+Tcell3 <- FindNeighbors(Tcell3, dims=1:15,reduction = "harmony")
+saveRDS(Tcell,'Tcell.rds')
+#clustree
+Tcell1 <- FindClusters(Tcell, resolution = c(seq(.1,1,.1)))
+clustree(Tcell1@meta.data, prefix = "RNA_snn_res.")
+Tcell <- FindClusters(Tcell,resolution = 1.0)
+DimPlot(Tcell, reduction = "umap", label = TRUE)
+#查看比例
+as.matrix(prop.table(table(Tcell$seurat_clusters, Tcell$Treatment), margin = 2)*100) 
+Tcell$condition <- factor(Tcell$condition, levels = c("HC", "CR", "NR"))
+Tcell$Treatment <- factor(Tcell$Treatment, levels = c("Control", "Before", "After"))
+Idents(Tcell) <- 'tc'
+Tcell.markers <- FindAllMarkers(Tcell, only.pos = TRUE, min.pct = 0.25, logfc.threshB = 0.25)
+Tcell.top30 <- data.frame(Tcell.markers %>% group_by(cluster) %>% slice_max(n = 30, order_by = avg_log2FC))
+write.csv(Tcell.top30,file = "Tcelltc.30.csv")
+write.csv(Tcell.markers,file = "Tcelltc.allmarkers.csv")
+```
+# T内部比较
+```{r}
+#Tex
+Idents(Tcell) <- 'tc'
+Tex.markers <- FindMarkers(Tcell,ident.1=c("CD8-C6-LAG3"),
+                              ident.2=c("CD8-C7-IFITM1"),
+                              logfc.threshold= 0.25,min.pct = 0.25)#为负表示ident2上调
+write.csv(Tex.markers,file = "Tex.markers.csv")
+
+```
+#T细胞命名
+```{r}
+cluster_names <- c("0" = "CD4-C4-GATA3","1" = "CD8-C5-GNLY","2" = "CD4-C1-LEF1","3" = "CD8-C4-GZMK", "4" = "CD8-C8-TRDC","5" = "CD4-C2-MAL","6" = "CD8-C6-LAG3","7" = "CD4-C3-PIK3IP1","8" = "CD8-C7-SLC4A10","9" = "CD4-C5-FOXP3","10" = "CD8-C1-LEF1","11" = "CD8-C3-PIK3R1","12" = "CD8-C2-IFITM1")
+Tcell$tc <- cluster_names[Tcell$seurat_clusters]
+DimPlot(Tcell,group.by = 'tc',label = T)
+
+cluster_names <- c("CD4-C1-CCR7"='1', "CD4-C2-MAL"='2', "CD4-C3-PIK3IP1"='3', "CD4-C4-GATA3"='4', "CD4-C5-FOXP3"='5', "CD8-C1-LEF1"='6', "CD8-C2-FXYD2"='7', "CD8-C3-PIK3R1"='8', "CD8-C4-GZMK"='9', "CD8-C5-GNLY"='10', "CD8-C6-LAG3"='11', "CD8-C7-IFITM1"='12',"CD8-C8-SLC4A10"='13', "CD8-C9-TRDC"='14')
+Tcell$tc1 <- cluster_names[Tcell$tc]
+Tcell$tc1 <- factor(Tcell$tc1, levels = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"))
+DimPlot(Tcell,group.by = 'tc1',label = T)
+```
+
+#T细胞绘图
+```{r}
+#Dotplot
+DotPlot(Tcell,features = c('CD4','CD8A','SELL','TCF7','LEF1','IL7R',"GATA3",                    'GZMK','GZMA','PRF1','GZMH','GNLY','IFNG','FOXP3','IKZF2','TRDC',   'TRDV2','SLC4A10','NCR3','ITGAE','CD69','CTLA4','LAG3','TIGIT'),group.by = 'tc1',
+        cols = c("#0D3681", '#CC3333'))+coord_flip()+
+  theme(axis.text.y = element_text(size = 10))+
+  theme(legend.title= element_text(size = 10))
+#占比堆积图
+#CR
+CR <- Tcell[,Tcell@meta.data$condition %in% c('CR')]
+t <- as.matrix(prop.table(table(CR$tc1, CR$orig.ident), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("CR")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5),
+    axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  guides(fill=guide_legend(title=NULL))
+#NR
+NR <- Tcell[,Tcell@meta.data$condition %in% c('NR')]
+t <- as.matrix(prop.table(table(NR$tc1, NR$orig.ident), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("NR")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5),
+    axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  guides(fill=guide_legend(title=NULL))
+#HC
+HC <- Tcell[,Tcell@meta.data$condition %in% c('HC')]
+t <- as.matrix(prop.table(table(HC$tc1, HC$orig.ident), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("HC")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5),
+    axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  guides(fill=guide_legend(title=NULL))
+#状态差异
+t <- as.matrix(prop.table(table(Tcell$tc1, Tcell$condition), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("Total")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5),
+    axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  guides(fill=guide_legend(title=NULL))
+
+t <- as.matrix(prop.table(table(Tcell$condition,Tcell$tc1), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  scale_fill_manual(values = c("#6699CC",'#FF9933','#DC3E1B')) + 
+  ggtitle("Total")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5),
+    axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  guides(fill=guide_legend(title=NULL))
+
+#每种细胞类型比例的箱线图
+ba <- as.data.frame(as.matrix(prop.table(table(Tcell$tc,Tcell$orig.ident), margin = 2)*100))
+ba$condition <- ifelse(ba$Var2 %in% c("AML1002.1", "AML1008.1", "AML1007.1", "AML1019.1"), "CR",
+                      ifelse(ba$Var2 %in% c("Control0004", "Control0005", "Control0082", "Control4003"), "HC", "NR"))
+write.csv(ba, "ba.csv", row.names = T)
+ba$condition <- factor(ba$condition, levels = c("HC", "CR", "NR"), ordered = TRUE)
+ba <- ba[order(ba$condition), ]
+my_comparisons <- list(c("HC","CR"), c("CR", "NR"),
+                       c("HC", "NR"))
+ggboxplot(ba, x = "condition", y = "Freq",
+          color = "condition", palette = "jco",
+          add = "jitter",
+          facet.by = "Var1", short.panel.labs = T)+
+    stat_compare_means(comparisons = my_comparisons,
+                       label.y=c(29, 35, 40),size = 2.5,ref.group = "0.5") +
+    stat_compare_means(label.y = 47,size = 3)+
+  ylim(0, 52)+
+  facet_wrap(~Var1, ncol = 5, scales = "free_y", labeller = labeller(Var1 = as_labeller(function(label) gsub("Var\\d+: ", "", label))))
+
+#细胞周期
+s.genes <- cc.genes.updated.2019$s.genes
+g2m.genes <- cc.genes.updated.2019$g2m.genes
+HSC <- CellCycleScoring(HSC, s.features = s.genes, g2m.features = g2m.genes)
+DimPlot(HSC, group.by = "Phase", label = TRUE)
+
+#蝴蝶GO图
+library(readxl)
+library(ggplot2)
+library(cowplot)
+C6 <- read_excel('./C6G.xlsx')
+C7 <- read_excel('./C7G.xlsx')
+
+#按 p 值排序，同时当两数据不等长时补充空白数据（尽可能使蝴蝶图对称）
+C6 <- C6[order(C6$Count, decreasing = F), ]
+C6$Description <- factor(C6$Description, levels = C6$Description)
+id_C6 <- levels(C6$Description)
+C7 <- C7[order(C7$Count, decreasing = F), ]
+C7$Description <- factor(C7$Description, levels = C7$Description)
+id_C7 <- levels(C7$Description)
+
+n <- length(C6$Description) - length(C7$Description)
+if (n > 0) {
+  C7$Description <- as.character(C7$Description)
+  for (i in paste('nn', as.character(seq(1, n, 1)), sep = '')) C7 <- rbind(list(i, NA, NA), C7)
+  C7$Description <- factor(C7$Description, levels = C7$Description)
+  id_C7 <- c(rep('', n), id_C7)
+} else if (n < 0) {
+  C6$Description <- as.character(C6$Description)
+  for (i in paste('nn', as.character(seq(1, abs(n), 1)), sep = '')) C6 <- rbind(list(i, NA, NA), C6)
+  C6$Description <- factor(C6$Description, levels = C6$Description)
+  id_C6 <- c(rep('', abs(n)), id_C6)
+}
+#C6G
+p_C6 <- ggplot(C6, aes(Description, -Count,fill=-log(pvalue, 10))) +
+  geom_col(aes(fill = -log(pvalue, 10)), width = 0.6) +  # 绘制柱状图，填充颜色为红色，边框颜色为黑色，柱子宽度为0.6
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = 'transparent')) +  # 设置主题，去除网格和背景
+  theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'transparent'), axis.ticks.y = element_line(colour = 'transparent')) +  # 设置坐标轴样式
+  theme(plot.title = element_text(hjust = 0.5, face = 'plain')) + 
+  coord_flip() + 
+  geom_hline(yintercept = 0) +  
+  labs(x = '', y = '', title = 'CD8-C6-LAG3') +
+  scale_fill_gradient(low = "#6CA3EA", high = "#0554B9") +
+    scale_x_discrete(labels = id_C6)+
+  scale_y_continuous(expand = c(0, 0), breaks = c(-20, -15, -10, -5, 0),
+                     labels = as.character(abs(c(-20, -15, -10, -5, 0))))+
+  theme(legend.position = "left")
+#C7G
+p_C7 <- ggplot(C7, aes(Description,Count,fill=-log(pvalue, 10))) +
+  geom_col(aes(fill = -log(pvalue, 10)), width = 0.6) + 
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = 'transparent')) +
+  theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'transparent'), axis.ticks.y = element_line(colour = 'transparent')) +
+  theme(plot.title = element_text(hjust = 0.5, face = 'plain')) +
+  geom_hline(yintercept = 0) +
+  coord_flip() +
+  labs(x = '', y = '', title = 'CD8-C7-IFITM1') +
+  scale_fill_gradient(low ="#CD6EF6", high ="#6A1190") +
+  scale_y_continuous(expand = c(0, 0), breaks = c(0, 5, 10, 15,20), labels = as.character(c(0, 5, 10, 15,20))) +       #这儿更改间距设置
+  scale_x_discrete(labels = id_C7, position = 'top')+
+  theme(legend.position = "right")
+
+plot_grid(p_C6, p_C7, nrow = 2, ncol = 2, rel_heights = c(9, 1), 
+          labels = 'GO biological process', label_x = 0.7, label_y = 0, label_fontface = 'plain')
+
+#蝴蝶KEGG图
+#按 p 值排序，同时当两数据不等长时补充空白数据（尽可能使蝴蝶图对称）
+C6 <- C6[order(C6$Count, decreasing = F), ]
+C6$Description <- factor(C6$Description, levels = C6$Description)
+id_C6 <- levels(C6$Description)
+C7 <- C7[order(C7$Count, decreasing = F), ]
+C7$Description <- factor(C7$Description, levels = C7$Description)
+id_C7 <- levels(C7$Description)
+
+n <- length(C6$Description) - length(C7$Description)
+if (n > 0) {
+  C7$Description <- as.character(C7$Description)
+  for (i in paste('nn', as.character(seq(1, n, 1)), sep = '')) C7 <- rbind(list(i, NA, NA), C7)
+  C7$Description <- factor(C7$Description, levels = C7$Description)
+  id_C7 <- c(rep('', n), id_C7)
+} else if (n < 0) {
+  C6$Description <- as.character(C6$Description)
+  for (i in paste('nn', as.character(seq(1, abs(n), 1)), sep = '')) C6 <- rbind(list(i, NA, NA), C6)
+  C6$Description <- factor(C6$Description, levels = C6$Description)
+  id_C6 <- c(rep('', abs(n)), id_C6)
+}
+#C6G
+p_C6 <- ggplot(C6, aes(Description, -Count,fill=-log(pvalue, 10))) +
+  geom_col(aes(fill = -log(pvalue, 10)), width = 0.6) +  # 绘制柱状图，填充颜色为红色，边框颜色为黑色，柱子宽度为0.6
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = 'transparent')) +  # 设置主题，去除网格和背景
+  theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'transparent'), axis.ticks.y = element_line(colour = 'transparent')) +  # 设置坐标轴样式
+  theme(plot.title = element_text(hjust = 0.5, face = 'plain')) + 
+  coord_flip() + 
+  geom_hline(yintercept = 0) +  
+  labs(x = '', y = '', title = 'CD8-C6-LAG3') +
+  scale_fill_gradient(low = "#BEEB58", high = "#638D05") +
+    scale_x_discrete(labels = id_C6)+
+  scale_y_continuous(expand = c(0, 0), breaks = c(-20, -15, -10, -5, 0),
+                     labels = as.character(abs(c(-20, -15, -10, -5, 0))))+
+  theme(legend.position = "left")
+#C7G
+p_C7 <- ggplot(C7, aes(Description,Count,fill=-log(pvalue, 10))) +
+  geom_col(aes(fill = -log(pvalue, 10)), width = 0.6) + 
+  theme(panel.grid = element_blank(), panel.background = element_rect(fill = 'transparent')) +
+  theme(axis.line.x = element_line(colour = 'black'), axis.line.y = element_line(colour = 'transparent'), axis.ticks.y = element_line(colour = 'transparent')) +
+  theme(plot.title = element_text(hjust = 0.5, face = 'plain')) +
+  geom_hline(yintercept = 0) +
+  coord_flip() +
+  labs(x = '', y = '', title = 'CD8-C7-IFITM1') +
+  scale_fill_gradient(low ="#F2DEA2", high ="#EB9811") +
+  scale_y_continuous(expand = c(0, 0), breaks = c(0, 5, 10, 15,20), labels = as.character(c(0, 5, 10, 15,20))) +       #这儿更改间距设置
+  scale_x_discrete(labels = id_C7, position = 'top')+
+  theme(legend.position = "right")
+
+plot_grid(p_C6, p_C7, nrow = 2, ncol = 2, rel_heights = c(9, 1), 
+          labels = 'KEGG signaling pathway', label_x = 0.7, label_y = 0, label_fontface = 'plain')
+
+```
+
+#TCR
+```{r}
+library(scRepertoire)
+csv07 <- read.csv("/data5/tiany/HSCTAML/Rawdata/TCR/AML1007.1.TCR/AML1007.1.TCR.all_contig_annotations.csv.gz", stringsAsFactors = F)
+
+csv19 <- read.csv("/data5/tiany/HSCTAML/Rawdata/TCR/AML1019.1.TCR/AML1019.1.TCR.all_contig_annotations.csv.gz", stringsAsFactors = F)
+
+csv10 <- read.csv("/data5/tiany/HSCTAML/Rawdata/TCR/AML1010.1.TCR/AML1010.1.TCR.all_contig_annotations.csv.gz", stringsAsFactors = F)
+
+csv12 <- read.csv("/data5/tiany/HSCTAML/Rawdata/TCR/AML1012.1.TCR/AML1012.1.TCR.all_contig_annotations.csv.gz", stringsAsFactors = F)
+
+csv16 <- read.csv("/data5/tiany/HSCTAML/Rawdata/TCR/AML1016.1.TCR/AML1016.1.TCR.all_contig_annotations.csv.gz", stringsAsFactors = F)
+
+csv22 <- read.csv("/data5/tiany/HSCTAML/Rawdata/TCR/AML1022.1.TCR/AML1022.1.TCR.all_contig_annotations.csv.gz", stringsAsFactors = F)
+
+csv26 <- read.csv("/data5/tiany/HSCTAML/Rawdata/TCR/AML1026.1.TCR/AML1026.1.TCR.all_contig_annotations.csv.gz", stringsAsFactors = F)
+
+csv08 <- read.csv("/data5/tiany/HSCTAML/Rawdata/TCR/AML1008.1.TCR/AML1008.1.TCR.all_contig_annotations.csv.gz", stringsAsFactors = F)
+
+contig_list <- list()
+contig_list[[1]] <- csv07
+contig_list[[2]] <- csv19
+contig_list[[3]] <- csv10
+contig_list[[4]] <- csv12
+contig_list[[5]] <- csv16
+contig_list[[6]] <- csv22
+contig_list[[7]] <- csv26
+contig_list[[8]] <- csv08
+
+combined <- combineTCR(contig_list, samples = c('AML1007.1.GEX','AML1019.1.GEX','AML1010.1.GEX','AML1012.1.GEX','AML1016.1.GEX','AML1022.1.GEX','AML1026.1.GEX','AML1008.1.GEX'),cells ="T-AB")
+
+#scRNA和TCR进行合并
+Tcell <-combineExpression(combined,Tcell,  
+                            cloneCall="gene", 
+                           # group.by = "Sample", 
+                            proportion = FALSE, 
+                            cloneTypes=c(Single=1, Small=5, Medium=20, Large=100, Hyperexpanded=500))
+
+Tcell2 <- Tcell[,Tcell@meta.data$condition %in% c('CR','NR')]
+Tcell2$TCR <- ifelse(Tcell2$cloneType %in% c("Hyperexpanded (100 < X <= 500)", "Large (20 < X <= 100)", "Medium (5 < X <= 20)", "Small (1 < X <= 5)","Single (0 < X <= 1)"),"TCR+", "TCR-")
+DimPlot(Tcell2, group.by = "TCR",label = F,cols = c('#BABDC1','#2174EF'))
+
+
+Tcell2$cloneType <- factor(Tcell2$cloneType, levels = c("Hyperexpanded (100 < X <= 500)", "Large (20 < X <= 100)", "Medium (5 < X <= 20)", "Small (1 < X <= 5)","Single (0 < X <= 1)"), ordered = TRUE)
+DimPlot(Tcell2, group.by = "cloneType",label = F,cols = c( "#F0F921FF","#FA9E3BFF","#D8576BFF", "#7301A8FF","#0D0887FF"),split.by = 'condition',ncol = 1)
+
+occupiedscRepertoire(Tcell2, x.axis = "tc",label = F,proportion = T)+theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+CRT <- Tcell2[,Tcell2@meta.data$condition %in% c('CR')]
+NRT <- Tcell2[,Tcell2@meta.data$condition %in% c('NR')]
+occupiedscRepertoire(CRT, x.axis = "tc",label = F,proportion = T)+theme(axis.text.x = element_text(angle = 60, hjust = 1),plot.title = element_text(hjust = 0.5))+ggtitle("CR")
+occupiedscRepertoire(NRT, x.axis = "tc",label = F,proportion = T)+theme(axis.text.x = element_text(angle = 60, hjust = 1),plot.title = element_text(hjust = 0.5))+ggtitle("NR")+
+  scale_fill_manual(values = c("#FA9E3BFF", "#D8576BFF", "#7301A8FF", "#0D0887FF"))
+
+combined2 <- expression2List(Tcell2, split.by = "condition")
+clonalDiversity(combined2,cloneCall = "nt")
+clonalHomeostasis(combined2,cloneCall = "nt")
+clonalOverlap(combined2, cloneCall="aa", method="overlap")+theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+compareClonotypes(combined2, numbers = 10,
+                  cloneCall="aa", graph = "alluvial") +  scale_fill_npg()
+
+NRT2 <- expression2List(NRT, split.by = "tc")
+clonalOverlap(NRT2, cloneCall="aa", method="overlap")+theme(axis.text.x = element_text(angle = 60, hjust = 1),plot.title = element_text(hjust = 0.5))+ggtitle("NR")
+
+CRT2 <- expression2List(CRT, split.by = "tc")
+clonalOverlap(CRT2, cloneCall="aa", method="overlap")+theme(axis.text.x = element_text(angle = 60, hjust = 1),plot.title = element_text(hjust = 0.5))+ggtitle("CR")
+
+#找到高度克隆的细胞
+selected_cells <- Tcell2[,Tcell2$Frequency == 106]
+
+seurat <- highlightClonotypes(Tcell2, cloneCall= "aa", sequence = c("CAMREPGGSYIPTF;CVVSDLSNTDKLIF_CASSIGVDTQYF"))
+DimPlot(seurat,group.by ="highlight") +theme(plot.title = element_blank())
+```
+
+#治疗前后绘图
+```{r}
+#注释
+cluster_names <- c("0" = "Monocyte","1" = "Monocyte","2" = "NK","3" = "T","4" = "T","5" = "HSC/MPP", "6" = "B","7" = "HSC/MPP","8" = "GMP","9" = "GMP","10" = "MEP","11" = "Later Ery","12" = "Early Ery","13" =  "EBM","14" = "Later Ery","15" = "cDC","16" = "Mid Ery","17" = "DE","18" = "DE","19" = "pDC","20" = "NK","21" = "DE","22" = "HSC/MPP","23" = "DE","24" = "DE","25" = "MEP","26" = "B","27" = "B")
+scRNA$Celltype <- cluster_names[scRNA$seurat_clusters]
+DimPlot(scRNA,group.by = 'Celltype',split.by = 'prediction',raster=FALSE)
+
+cluster_names <- c("HSC/MPP" = "1","GMP" = "2","EBM" = "3","MEP" = "4","Early Ery" = "5","Mid Ery" = "6", "Later Ery" = "7","Monocyte" = "8","cDC" = "9","pDC" = "10","B" = "11","T" = "12","NK" = "13")
+scRNA$Celltype3 <- cluster_names[scRNA$Celltype]
+
+BEF <- scRNA[,scRNA@meta.data$orig.ident %in% c('AML1002.1','AML1008.1','AML1010.1','AML1012.1','AML1016.1','AML1019.1','AML1022.1','AML1026.1','Control0004','Control0005','Control0082','Control4003')]
+```
+
+```{r}
+scRNA$Celltype <- factor(scRNA$Celltype, levels = c("HSC/MPP","GMP","MEP","EBM","Early Ery","Mid Ery","Later Ery","Monocyte","cDC","pDC", "B","T","NK"))
+scRNA$condition <- factor(scRNA$condition, levels = c("HC","CR","NR"))
+scRNA$condition1 <- ifelse(scRNA$condition %in% c("CR", "NR"), "AML", "HC")
+scRNA$Celltype3 <- factor(scRNA$Celltype3, levels = c(1:13))
+
+scRNA$prediction <- ifelse(scRNA$prediction %in% c("normal"), "Normal", "Malignant")
+scRNA$prediction <- factor(scRNA$prediction, levels = c('Normal','Malignant'))
+#
+DimPlot(scRNA,label = T,cols = c('#8D6578','#7C7896','#AF9392','#D5A19C','#F19E9C','#EF7F51','#DA635C','#9999C9','#C3BC6C','#B1C07A','#F5E81A','#7CBC8A','#57B1A9'))
+
+```
+
+```{r}
+#细胞类型
+p <- DimPlot(BEF,label.size = 4,group.by = 'Celltype3',label = T,cols = c('#6E0E66','#9A6FAF','#F05998','#7C7896','#DFC4DE','#D9A7CC','#EB8ABA','#9999C9','#C3BC6C','#B1C07A','#7CBC8A','#008C84','#1B91D1'))
+
+DimPlot(BEF,split.by = 'orig.ident',group.by = 'condition',cols = c('#75A4C9','#EB8ABA','#9584C1'),ncol = 4)
+
+DimPlot(BEF,group.by = 'prediction',split.by = 'condition',cols = c('#C0C0C0','#FF0000'))
+
+DimPlot(BEF,split.by = 'condition1',cols = c('#6E0E66','#9A6FAF','#F05998','#7C7896','#DFC4DE','#D9A7CC','#EB8ABA','#9999C9','#C3BC6C','#B1C07A','#7CBC8A','#008C84','#1B91D1'),label = T)
+
+p <- p + 
+  theme(
+    panel.border = element_rect(color = "black", fill = NA), # 四周框线
+    axis.line = element_blank(),  # 移除默认的坐标轴线
+    axis.ticks = element_line(color = "black"),  # 仅左下角的刻度线
+    axis.text = element_text(color = "black")  # 仅左下角的刻度文本
+  ) + 
+  scale_x_continuous(position = "bottom") + 
+  scale_y_continuous(position = "left")
+
+#肿瘤预测
+p <-DimPlot(BEF,group.by = 'prediction',split.by = 'condition',cols = c('#C0C0C0','#FF0000'))+theme(
+    panel.border = element_rect(color = "black", fill = NA), # 四周框线
+    axis.line = element_blank(),  # 移除默认的坐标轴线
+    axis.ticks = element_line(color = "black"),  # 仅左下角的刻度线
+    axis.text = element_text(color = "black")  # 仅左下角的刻度文本
+  ) + 
+  scale_x_continuous(position = "bottom") + 
+  scale_y_continuous(position = "left")
+```
+
+```{r}
+#气泡图
+gene <- c('CD34','CD38','PROM1','SPINK2','EGFL7','MPO','ELANE', 'CTSG', 'AZU1', 'NFE2','KIT','GATA2','GATA1','MS4A2', 'HDC','BLVRB','GYPB', 'SLC4A1', 'HBB', 'LYZ', 'VCAN', 'FCN1', 'CD14','CST3',"CD1C",'IRF8','JCHAIN',  'CD79A','MS4A1','IGKC','CD3D', 'CD3G','IL7R','TCF7','KLRB1', 'KLRD1', 'GZMB')
+
+DotPlot(BEF,features = gene,group.by = 'Celltype',cols = c('#DADBE1','#000C7A'))+coord_flip()+ theme(axis.text.x = element_text(angle = 60, hjust =1, size = 10),axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 8),
+    legend.title = element_text(size = 8),legend.text = element_text(size = 8))
+
+
+```
+
+```{r}
+#基因umap
+FeaturePlot(BEF,features = c('CD34'))+ theme(
+    panel.border = element_rect(color = "black", fill = NA),
+    axis.line = element_blank(),
+    axis.text = element_blank(),   # 去掉文本内容
+    axis.ticks = element_blank())   # 去掉刻度线
+
+```
+
+```{r}
+#差异 健康人和患者
+#面积堆积图按细胞类型
+t <- as.matrix(prop.table(table(HSC1$condition1,HSC1$Celltype1), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+    geom_bar(stat="identity",position="fill")+
+    ggtitle("")+ylab("Proportion(%)") +
+    theme_bw()+
+    theme(axis.ticks.length=unit(0.1,'cm'),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          text = element_text(size = 10),
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 10))+
+    guides(fill=guide_legend(title=NULL))+scale_fill_manual(values=c('#AB84B6', '#E4E45F'))
+#ENO1 小提琴图
+library(ggplot2)
+library(reshape2)
+library(plyr)
+library(ImageGP)
+library(ggpubr)
+source("/data5/tiany/Code/functions/Function_for_violin_plot.R")
+features <-c("ENO1","EEF1A1","CD300A","CD99","TCF4","ID1","SREBF1") #
+expr = t(as.matrix(HSC1@assays$RNA@data[features,]))
+posi= match(rownames(expr),rownames(HSC1@meta.data))
+ts = cbind(expr,HSC1@meta.data[posi,c("prediction","Celltype1","condition1","condition")])
+head(ts)
+ggplot(ts, aes(x =Celltype1, y = ENO1, fill = condition1)) +
+  geom_split_violin(trim = F, scale = "area", width = 1, alpha = 0.9) +
+  # 绘制箱线图
+  geom_boxplot(width = 0.25, outlier.shape = NA, alpha = 1) +
+  # 绘制置信区间
+  #geom_errorbar(stat = "summary", fun.data = "median_hilow", width = 0.1, color = "black") +
+  # 设置图例
+  labs(x = "", y = "ENO1 Expression Level", fill = "") +
+  scale_fill_manual(values = c('#AB84B6', '#E4E45F'))+#'#EB8ABA','#9584C1'
+  # 主题设置
+  theme_minimal()+theme(axis.text = element_text(size = 10,color = "#4B4B4B"),
+        panel.grid.major = element_blank(),  # 去掉主要网格线
+        panel.grid.minor = element_blank(),  # 去掉次要网格线
+        axis.line = element_line(size = 0.4, color = "#4B4B4B"),  # 添加轴线
+        axis.ticks = element_line(size = 0.6),  # 添加刻度线
+        axis.text.x = element_text(angle = 90,vjust = 0.5, hjust = 1, size = 10),  # 调整 x 轴文本角度和位置
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)# 去掉面板背景
+  )+stat_compare_means(aes(group=condition1),
+                       method = "t.test",
+                       label = "p.signif",
+                       label.y = 4.6, size=4.5)
+#差异 健康人和患者
+#面积堆积图按细胞类型
+t <- as.matrix(prop.table(table(BEF$Celltype,BEF$condition1), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 12),
+        axis.text.x = element_text(angle = 0, hjust = 0.5, size = 12))+
+  guides(fill=guide_legend(title=NULL))+scale_fill_manual(values=c('#6E0E66','#9A6FAF','#F05998','#7C7896','#DFC4DE','#D9A7CC','#EB8ABA','#9999C9','#C3BC6C','#B1C07A','#7CBC8A','#008C84','#1B91D1'))
+
+#差异 健康人和患者
+#面积堆积图按细胞类型
+t <- as.matrix(prop.table(table(BEF$Celltype,BEF$orig.ident), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 15),
+        axis.text.x = element_text(angle = 0, hjust = 0, size = 15))+
+  guides(fill=guide_legend(title=NULL))+scale_fill_manual(values=c('#6E0E66','#9A6FAF','#F05998','#7C7896','#DFC4DE','#D9A7CC','#EB8ABA','#9999C9','#C3BC6C','#B1C07A','#7CBC8A','#008C84','#1B91D1'))
+
+#面积堆积图按细胞状态
+t <- as.matrix(prop.table(table(scRNA$condition,scRNA$Celltype), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+p$cluster <- factor(p$cluster, levels = c("HC","CR","NR"))
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        text = element_text(size = 8),
+        axis.text.x = element_text(angle = 60, hjust = 1, size = 8))+
+  guides(fill=guide_legend(title=NULL))+scale_fill_manual(values=c('#336699','#FF9933','#CC3333'))
+#按照状态并分面
+new_col <- paste(scRNA$condition, scRNA$prediction, sep = "_")
+scRNA <- AddMetaData(scRNA, metadata = new_col, col.name = "new")
+
+t <- as.matrix(prop.table(table(scRNA$new,scRNA$Celltype), margin = 2)*100) 
+p <- as.data.frame(t)
+p <- p %>%
+  separate(Var1, into = c("Var1", "Var3"), sep = "_", remove = FALSE)
+
+colnames(p) <-c('condition',"Disease","cluster","proportion")
+p$condition <- factor(p$condition, levels = c("HC","CR","NR"))
+#进行分面
+ggplot(p, aes(cluster, proportion, fill = Disease)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ condition) +
+  ggtitle("") +
+  theme_bw() +
+  theme(
+    axis.ticks.length = unit(0.1, 'cm'),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    text = element_text(size = 8),
+    axis.text.x = element_text(angle = 60,hjust = 1,size = 6)
+  ) +
+  guides(fill = guide_legend(title = NULL)) +
+  scale_fill_manual(values = c('#FF0000','#C0C0C0'))
+
+```
+
+```{r}
+#修改部分
+filtered_metadata <- BEF@meta.data %>%
+    filter(orig.ident == "AML1008.1", Celltype == "B", prediction == "Malignant")
+BEF$prediction[rownames(filtered_metadata)] <-'Normal'
+
+scRNA$condition2[scRNA$orig.ident %in% c("AML1002.4", "AML1008.3", "AML1019.3", "AML1010.3", "AML1012.3", "AML1016.2", "AML1026.3")] <- "Post-Tx"
+scRNA$condition2[scRNA$orig.ident %in% c("AML1002.1", "AML1008.1", "AML1019.1", "AML1010.1", "AML1012.1", "AML1016.1", "AML1022.1", "AML1026.1")] <- "Pre-Tx"
+scRNA$condition2[scRNA$orig.ident %in% c("Control0004", "Control0005", "Control0082", "Control4003")] <- "HC"
+
+```
+
+
+```{r}
+AML1002 <- scRNA[,scRNA@meta.data$orig.ident %in% c('AML1002.1','AML1002.4')]
+DimPlot(AML1002, group.by = 'prediction', split.by = 'condition2', cols = c('#C0C0C0','#FF0000'), ncol = 1) + ggtitle("AML1002") +
+    theme(
+        panel.border = element_rect(color = "black", fill = NA), # 四周框线
+        axis.line = element_blank(), # 移除默认的坐标轴线
+        axis.ticks = element_blank(), # 移除刻度线
+        axis.text = element_blank(), # 移除刻度文本
+        strip.text = element_blank() # 去掉分面的小标题
+    ) +
+    scale_x_continuous(position = "bottom") +
+    scale_y_continuous(position = "left")
+
+AML1008 <- scRNA[,scRNA@meta.data$orig.ident %in% c('AML1008.1','AML1008.3')]
+DimPlot(AML1008, group.by = 'prediction', split.by = 'condition2', cols = c('#C0C0C0','#FF0000'), ncol = 1) + 
+  ggtitle("AML1008") +
+    theme(
+        panel.border = element_rect(color = "black", fill = NA), # 四周框线
+        axis.line = element_blank(), # 移除默认的坐标轴线
+        axis.ticks = element_blank(), # 移除刻度线
+        axis.text = element_blank(), # 移除刻度文本
+        strip.text = element_blank() # 去掉分面的小标题
+    ) +
+    scale_x_continuous(position = "bottom") +
+    scale_y_continuous(position = "left")
+
+AML1019 <- scRNA[,scRNA@meta.data$orig.ident %in% c('AML1019.1','AML1019.3')]
+DimPlot(AML1019, group.by = 'prediction', split.by = 'condition2', cols = c('#C0C0C0','#FF0000'), ncol = 1) + 
+  ggtitle("AML1019") +
+    theme(
+        panel.border = element_rect(color = "black", fill = NA), # 四周框线
+        axis.line = element_blank(), # 移除默认的坐标轴线
+        axis.ticks = element_blank(), # 移除刻度线
+        axis.text = element_blank(), # 移除刻度文本
+        strip.text = element_blank() # 去掉分面的小标题
+    ) +
+    scale_x_continuous(position = "bottom") +
+    scale_y_continuous(position = "left")
+
+AML1012 <- scRNA[,scRNA@meta.data$orig.ident %in% c('AML1012.1','AML1012.3')]
+DimPlot(AML1012, group.by = 'prediction', split.by = 'condition2', cols = c('#C0C0C0','#FF0000'), ncol = 1) + 
+  ggtitle("AML1012") +
+    theme(
+        panel.border = element_rect(color = "black", fill = NA), # 四周框线
+        axis.line = element_blank(), # 移除默认的坐标轴线
+        axis.ticks = element_blank(), # 移除刻度线
+        axis.text = element_blank(), # 移除刻度文本
+        strip.text = element_blank() # 去掉分面的小标题
+    ) +
+    scale_x_continuous(position = "bottom") +
+    scale_y_continuous(position = "left")
+
+AML1010 <- scRNA[,scRNA@meta.data$orig.ident %in% c('AML1010.1','AML1010.3')]
+DimPlot(AML1010, group.by = 'prediction', split.by = 'condition2', cols = c('#C0C0C0','#FF0000'), ncol = 1) +
+  ggtitle("AML1010") +
+    theme(
+        panel.border = element_rect(color = "black", fill = NA), # 四周框线
+        axis.line = element_blank(), # 移除默认的坐标轴线
+        axis.ticks = element_blank(), # 移除刻度线
+        axis.text = element_blank(), # 移除刻度文本
+        strip.text = element_blank() # 去掉分面的小标题
+    ) +
+    scale_x_continuous(position = "bottom") +
+    scale_y_continuous(position = "left")
+
+AML1022 <- scRNA[,scRNA@meta.data$orig.ident %in% c('AML1022.1','AML1022.3')]
+DimPlot(AML1022, group.by = 'prediction', split.by = 'condition2', cols = c('#C0C0C0','#FF0000'), ncol = 1) + 
+  ggtitle("AML1022") +
+    theme(
+        panel.border = element_rect(color = "black", fill = NA), # 四周框线
+        axis.line = element_blank(), # 移除默认的坐标轴线
+        axis.ticks = element_blank(), # 移除刻度线
+        axis.text = element_blank(), # 移除刻度文本
+        strip.text = element_blank() # 去掉分面的小标题
+    ) +
+    scale_x_continuous(position = "bottom") +
+    scale_y_continuous(position = "left")
+
+AML1026 <- scRNA[,scRNA@meta.data$orig.ident %in% c('AML1026.1','AML1026.3')]
+DimPlot(AML1026, group.by = 'prediction', split.by = 'condition2', cols = c('#C0C0C0','#FF0000'), ncol = 1) + 
+  ggtitle("AML1026") +
+    theme(
+        panel.border = element_rect(color = "black", fill = NA), # 四周框线
+        axis.line = element_blank(), # 移除默认的坐标轴线
+        axis.ticks = element_blank(), # 移除刻度线
+        axis.text = element_blank(), # 移除刻度文本
+        strip.text = element_blank() # 去掉分面的小标题
+    ) +
+    scale_x_continuous(position = "bottom") +
+    scale_y_continuous(position = "left")
+
+AML1016 <- scRNA[,scRNA@meta.data$orig.ident %in% c('AML1016.1','AML1016.2')]
+DimPlot(AML1016, group.by = 'prediction', split.by = 'condition2', cols = c('#C0C0C0','#FF0000'), ncol = 1) + 
+  ggtitle("AML1016") +
+    theme(
+        panel.border = element_rect(color = "black", fill = NA), # 四周框线
+        axis.line = element_blank(), # 移除默认的坐标轴线
+        axis.ticks = element_blank(), # 移除刻度线
+        axis.text = element_blank(), # 移除刻度文本
+        strip.text = element_blank() # 去掉分面的小标题
+    ) +
+    scale_x_continuous(position = "bottom") +
+    scale_y_continuous(position = "left")
+```
+
+```{r}
+#三组小提琴图
+features <-c("ENO1","EEF1A1","CD300A","CD99","TCF4","ID1","SREBF1") #
+expr = t(as.matrix(BEF@assays$RNA@data[features,]))
+posi= match(rownames(expr),rownames(BEF@meta.data))
+ts = cbind(expr,BEF@meta.data[posi,c("condition","Celltype")])
+
+gene = "ENO1"
+expr_single = ts[,gene]
+
+ggplot(ts, aes(x = condition, y = expr_single, fill = condition)) +
+  geom_violin(scale = "width", alpha = 0.6, width = 0.8, size = 0.5) +
+  geom_boxplot(width = 0.1, alpha = 0, fill = "white", color = "black") +
+  stat_summary(fun.y = median, geom = "point", shape = 18, size = 3, color = "black") +
+  scale_fill_manual(values = c('#75A4C9', '#EB8ABA', '#9584C1')) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #panel.border = element_rect(size = 1), 全框
+        axis.text.x = element_text(angle = 0, size = 10, vjust = 0.5, hjust = 0.5, color = "black"),
+        axis.text.y = element_text(size = 10)) +
+  labs(fill = gene) +
+  ggtitle(gene) +
+  ylab("ENO1 Expression Level") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_compare_means(label.y = 3.5, 
+                     label.x = 1, 
+                     label.fontface = "bold",
+                     label.sep = "\n")
+#NRvsCR 基因表达量
+features <-c("ENO1","EEF1A1","CD300A","CD99","TCF4","ID1","SREBF1") #
+expr = t(as.matrix(Mye@assays$RNA@data[features,]))
+posi= match(rownames(expr),rownames(Mye@meta.data))
+ts = cbind(expr,Mye@meta.data[posi,c("condition","Celltype",'prediction')])
+
+gene = "ENO1"
+expr_single = ts[,gene]
+
+ggplot(ts, aes(x = Celltype, y = expr_single, fill = prediction)) +
+  geom_violin(scale = "width", alpha = 0.6, width = 0.8, size = 0.5) +
+  geom_boxplot(width = 0.1, alpha = 0, fill = "white", color = "black") +
+  stat_summary(fun.y = median, geom = "point", shape = 18, size = 3, color = "black") +
+  scale_fill_manual(values = c('#619CD9', '#E38D8C')) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #panel.border = element_rect(size = 1), 全框
+        axis.text.x = element_text(angle = 0, size = 10, vjust = 0.5, hjust = 0.5, color = "black"),
+        axis.text.y = element_text(size = 10)) +
+  labs(fill = gene) +
+  ggtitle(gene) +
+  ylab("ENO1 Expression Level") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  stat_compare_means(label.y = 3.5, 
+                     label.x = 1, 
+                     label.fontface = "bold",
+                     label.sep = "\n")
+```
+
+```{r}
+#随机
+remove_random_cells <- function(seurat_obj, celltype, condition, num_remove) {
+    # 找到符合条件的细胞
+    cells_to_remove <- WhichCells(seurat_obj, cells = which(seurat_obj$Celltype == celltype & seurat_obj$condition1 == condition))
+    
+    # 检查是否有足够的细胞可供删除
+    if (length(cells_to_remove) < num_remove) {
+        stop("Not enough cells to remove")
+    }
+    
+    # 随机选择需要删除的细胞
+    cells_to_remove_sample <- sample(cells_to_remove, num_remove)
+    
+    # 删除这些细胞
+    seurat_obj <- subset(seurat_obj, cells = setdiff(Cells(seurat_obj), cells_to_remove_sample))
+    
+    return(seurat_obj)
+}
+
+# 假设 HSC2 是你的 Seurat 对象，并删除 After treatment 中 HSC/MPP4 群的 700 个细胞
+HSC2 <- remove_random_cells(HSC2, celltype = "HSC/MPP4", condition = "After treatment", num_remove = 700)
+```
+

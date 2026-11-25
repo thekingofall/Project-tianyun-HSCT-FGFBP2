@@ -1,0 +1,550 @@
+---
+title: "RRT"
+output: html_document
+date: "2024-12-17"
+---
+#读入数据部分调整
+```{r}
+after <- merge(AML1002.4,y=c(AML1008.3,AML1010.3,AML1012.3,AML1016.2,AML1022.3,AML1026.3))
+at <- scRNA1[,scRNA1$orig.ident %in%c('AML1002.4',"AML1008.3","AML1010.3","AML1012.3","AML1016.2","AML1022.3","AML1026.3")]
+table(after$orig.ident)
+table(at$orig.ident)
+
+after$barcode <- colnames(after)
+head(after$barcode)
+at$barcode <- colnames(at)
+head(at$barcode)
+at$barcode <- sub("_.*", "", at$barcode)
+at$bar <- paste(at$orig.ident,"GEX", sep = ".")
+at$barcode <- paste(at$bar, at$barcode, sep = "_")
+
+
+common_columns <- which(after$barcode %in% at$barcode)
+after@meta.data$ture <- 'N' 
+after@meta.data$ture[common_columns] <- 'T'
+table(after$ture)
+after <- after[,after$ture %in% c('T')]
+
+# 获取 at 和 after 的 barcode 列
+barcodes_at <- at@meta.data$barcode
+barcodes_after <- after@meta.data$barcode
+
+# 创建一个新的列 'true'，初始值为 'N'
+after@meta.data$true <- 'N'
+
+# 找到 at 中的 barcode 是否存在于 after 中
+after@meta.data$true[after@meta.data$barcode %in% barcodes_at] <- 'T'
+
+# 查看更新后的 after@meta.data
+head(after@meta.data)
+after$ture <- NULL
+after <- after[,after$true %in% c('T')]
+
+#将一列列进行映射
+# 获取 at 和 after 的 barcode 列
+barcodes_at <- at@meta.data$barcode
+barcodes_after <- after@meta.data$barcode
+
+# 获取 at 中的 Celltype 列
+celltype_at <- at@meta.data$Celltype
+
+# 在 after 中创建一个新的列 'Celltype'
+after@meta.data$Celltype <- NA
+
+# 将 at 中的 Celltype 映射到 after 中
+after@meta.data$Celltype[after@meta.data$barcode %in% barcodes_at] <- celltype_at[match(after@meta.data$barcode[after@meta.data$barcode %in% barcodes_at], barcodes_at)]
+# 加载 dplyr 包
+library(dplyr)
+
+# 定义新的 Celltype 名称
+new_celltypes <- c("HSC/MPP", "GMP", "MEP", "EBM", "Early Ery", 
+                   "Mid Ery", "Later Ery", "Monocyte", "cDC", 
+                   "pDC", "B", "T", "NK")
+
+# 修改 Celltype 列
+after@meta.data$Celltype <- as.character(after@meta.data$Celltype) # 确保是字符型
+after@meta.data$Celltype <- recode(after@meta.data$Celltype, 
+                                   `1` = new_celltypes[1], 
+                                   `2` = new_celltypes[2], 
+                                   `3` = new_celltypes[3], 
+                                   `4` = new_celltypes[4], 
+                                   `5` = new_celltypes[5], 
+                                   `6` = new_celltypes[6], 
+                                   `7` = new_celltypes[7], 
+                                   `8` = new_celltypes[8], 
+                                   `9` = new_celltypes[9], 
+                                   `10` = new_celltypes[10], 
+                                   `11` = new_celltypes[11], 
+                                   `12` = new_celltypes[12], 
+                                   `13` = new_celltypes[13])
+
+# 查看更新后的 Celltype
+table(after@meta.data$Celltype)
+
+```
+##降维聚类
+```{r}
+scRNA <- scRNA1[,!scRNA1$orig.ident %in% c('AML1002.4',"AML1008.3","AML1010.3","AML1012.3","AML1016.2","AML1022.3","AML1026.3")]
+scRNA <- merge(scRNA,after)
+scRNA <- NormalizeData(scRNA) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+scRNA <- RunPCA(scRNA, verbose = F)
+scRNA <- RunHarmony(scRNA,group.by.vars = "orig.ident")
+scRNA <- scRNA %>% RunUMAP(dims=1:20,reduction = "harmony")
+scRNA <- FindNeighbors(scRNA, dims=1:20,reduction = "harmony")
+```
+
+##TF
+```{r}
+library(Seurat)
+library(decoupleR)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(patchwork)
+library(ggplot2)
+library(pheatmap)
+library(dorothea)
+library(OmnipathR)
+library(dplyr)
+```
+
+
+```{r}
+net <- get_progeny(organism = 'human', top = 500)
+```
+
+```{r}
+mat <- as.matrix(Tcell@assays$RNA@data)
+acts <- run_mlm(mat=mat, net=net, .source='source', .target='target',
+                .mor='weight', minsize = 5)
+acts
+```
+
+```{r}
+#转录因子活性
+net <- decoupleR::get_collectri(organism='human', split_complexes=FALSE)
+mat <- as.matrix(Tcell@assays$RNA@data)
+net2 <- subset(net, !is.na(source) & !is.na(target))
+acts <- run_ulm(mat=mat, net=net2, .source='source', .target='target',
+                .mor='mor', minsize = 5)
+write.csv(net2,'TFnet.csv')
+```
+
+```{r}
+Tcell[['TF']] <- acts %>%
+  pivot_wider(id_cols = 'source', names_from = 'condition',
+              values_from = 'score') %>%
+  column_to_rownames('source') %>%
+  Seurat::CreateAssayObject(.)
+
+# Change assay
+DefaultAssay(object = Tcell) <- "TF"
+
+# Scale the data
+Tcell <- ScaleData(Tcell)
+Tcell@assays$TF@data <- Tcell@assays$TF@scale.data
+```
+
+
+#TCR
+```{r cars}
+AML1002 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997844_AML1002.1.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1002.4 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997846_AML1002.4.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1008 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997847_AML1008.1.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1008.3 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997849_AML1008.3.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1010 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997826_AML1010.1.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1010.3 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997828_AML1010.3.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1012 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997831_AML1012.1.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1012.3 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997833_AML1012.3.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1016 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997835_AML1016.1.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1016.2 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997836_AML1016.2.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1019 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997820_AML1019.1.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1019.3 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997822_AML1019.3.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1022 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997837_AML1022.1.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1022.3 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997839_AML1022.3.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1026 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997840_AML1026.1.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+AML1026.3 <- read.csv("/data5/tiany/RRAML/HSCTRR/T/TCR/GSM6997842_AML1026.3.TCR.all_contig_annotations.csv.gz",stringsAsFactors = F)
+```
+
+```{r}
+library(scRepertoire)
+library(Seurat)
+library(ggsci)
+contig_list <- list(AML1002,AML1002.4, AML1008,AML1008.3, AML1010,AML1010.3, AML1012, AML1012.3,AML1016,  AML1016.2,AML1019, AML1019.3, AML1022,AML1022.3,AML1026,AML1026.3)#
+combined <- combineTCR(contig_list, samples = c("AML1002.1.GEX","AML1002.4.GEX", "AML1008.1.GEX","AML1008.3.GEX", "AML1010.1.GEX","AML1010.3.GEX", "AML1012.1.GEX","AML1012.3.GEX", "AML1016.1.GEX","AML1016.2.GEX", "AML1019.1.GEX","AML1019.3.GEX", "AML1022.1.GEX","AML1022.3.GEX", "AML1026.1.GEX","AML1026.3.GEX"),cells ="T-AB")#
+
+combined <- addVariable(combined, name = "ID", variables = c(
+  "CR","CR","CR","CR","NR","NR","NR","NR","NR","NR","CR","CR","NR","NR","NR","NR"))
+combined <- addVariable(combined, name = "ID1", variables = c(
+  "CR-Pre","CR-Post","CR-Pre","CR-Post","NR-Pre","NR-Post","NR-Pre","NR-Post","NR-Pre","NR-Post","CR-Pre","CR-Post","NR-Pre","NR-Post","NR-Pre","NR-Post"))
+```
+
+```{r}
+scRNA <- combineExpression(combined, scRNA, 
+                            cloneCall="gene", 
+                            # group.by = "Sample", 
+                            proportion = FALSE, 
+                            cloneTypes=c(Single=1, Small=5, Medium=20, Large=100, Hyperexpanded=10000))
+
+scRNA$TCR <- ifelse(scRNA$cloneType %in% c("Hyperexpanded (100 < X <= 10000)", 
+                                          "Large (20 < X <= 100)", 
+                                          "Medium (5 < X <= 20)", 
+                                          "Single (0 < X <= 1)",'Small (1 < X <= 5)'), "TCR+", "TCR-")
+
+scRNA$cloneType <- factor(scRNA$cloneType, levels = c("Hyperexpanded (100 < X <= 10000)","Large (20 < X <= 100)",'Medium (5 < X <= 20)','Small (1 < X <= 5)','Single (0 < X <= 1)'), ordered = TRUE)
+scRNA$TCR <- factor(scRNA$TCR, levels = c("TCR+","TCR-"), ordered = TRUE)
+DimPlot(scRNA,group.by = 'TCR',raster = F,cols =c('blue','grey'))
+```
+##克隆共享
+```{r}
+combined2 <- expression2List(Tcell,split.by = "Celltype")
+clonalOverlap(combined2, 
+             cloneCall="aa", method="overlap"#overlap raw
+             )+ scale_fill_gradient(low = "#0269DD", high = "#F43A3A", na.value = "white")+theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5))+ggtitle("Single")+
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+DimPlot(Tcell,group.by = 'cloneType',cols =c('#F43A3A','#F4A73A','#8ACB03','#03CBB0','#0269DD','#D8DADD'),split.by = 'condition3')
+```
+
+##比较克隆丰度
+```{r}
+
+abundanceContig(Tcell,cloneCall = "CTgene",split.by = 'condition3')+ scale_color_manual(values = c('#EC88BA','#F2A6C1','#9684C2','#AFA0D4'))+
+  geom_line(size = 1.5) 
+
+combinCR <- combined[c("AML1002.1.GEX","AML1002.4.GEX", "AML1008.1.GEX","AML1008.3.GEX","AML1019.1.GEX","AML1019.3.GEX")]
+abundanceContig(combinCR,cloneCall = "CDR3", scale = T,group.by = 'ID1')+ scale_fill_manual(values = c('#E8C0DD','#B60887'))
+combinNR <- combined[c("AML1010.1.GEX","AML1010.3.GEX", "AML1012.1.GEX","AML1012.3.GEX", "AML1016.1.GEX","AML1016.2.GEX", "AML1022.1.GEX","AML1022.3.GEX", "AML1026.1.GEX","AML1026.3.GEX")]
+abundanceContig(combinNR,cloneCall = "gene", scale = T,group.by = 'ID1')+ scale_fill_manual(values = c('#C0ADFC','#6907B4'))
+
+combinPre <- combined[c("AML1002.1.GEX", "AML1008.1.GEX", "AML1010.1.GEX", "AML1012.1.GEX", "AML1016.1.GEX", "AML1019.1.GEX", "AML1022.1.GEX", "AML1026.1.GEX")]
+abundanceContig(combinPre,cloneCall = "gene", scale = T,group.by = 'ID1')+ scale_fill_manual(values = c('#B60887','#6907B4'))
+
+combinPost <- combined[c("AML1002.4.GEX", "AML1008.3.GEX", "AML1010.3.GEX", "AML1012.3.GEX", "AML1016.2.GEX", "AML1019.3.GEX","AML1022.3.GEX", "AML1026.3.GEX")]
+abundanceContig(combinPost,cloneCall = "gene", scale = T,group.by = 'ID1')+ scale_fill_manual(values = c('#E8C0DD','#C0ADFC'))
+```
+
+```{r}
+#共享克隆
+compareClonotypes(combined, numbers = 10, 
+                  samples = c("t3_PBMC","t3_Normal","t3_Center"),  
+                  #samples = c("t2_Normal", "t2_PBMC","t3_PBMC","t3_Normal","t3_Center"),  
+                  cloneCall="aa", 
+                  graph = "alluvial")
+```
+
+
+# T注释
+```{r pressure, echo=FALSE}
+Tcell <- NormalizeData(Tcell) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+Tcell <- RunPCA(Tcell, verbose = F)
+Tcell <- RunHarmony(Tcell,group.by.vars = "orig.ident")
+Tcell <- Tcell %>% RunUMAP(dims=1:20,reduction = "harmony")
+Tcell <- FindNeighbors(Tcell, dims=1:20,reduction = "harmony")
+Tcell1 <- FindClusters(Tcell, resolution = c(seq(.5,2,.1)))
+clustree(Tcell1@meta.data, prefix = "RNA_snn_res.")
+Tcell <- FindClusters(Tcell,resolution = 0.7)
+DimPlot(Tcell,label = T)
+Tmarkers <- FindAllMarkers(Tcell, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(Tmarkers,file = "Tmarkers.csv")
+```
+
+```{r}
+DotPlot(Tcell,features = c('CD3E','CD3D','CD4','CD8A','CD8B','SELL','TCF7','LEF1','IL7R','CCR7','CD28','FAS','HNRNPLL',
+                           'PRF1','GNLY','GZMK','GZMH','FOXP3','IKZF2',
+                           'CD69','LAG3','TOX','TIGIT','CTLA4','PDCD1','MKI67','ITGAE',
+                           'NCAM1',"FCGR3A","KLRC2",'SLC4A10',
+                           'TRAV1-2','TRDC','TRDV2','TRGV9'),
+        group.by = 'Celltype',
+        cols = c('#A7A3B2','#2F0B95'))+coord_flip()+
+  theme(axis.text.y = element_text(size = 10))+
+  theme(axis.text.x = element_text(size=10,angle=90,vjust = 0.5,hjust = 1),
+        legend.title= element_text(size = 10))
+```
+
+```{r}
+cluster_names <- c("0" = "CD4 Naive","1" = "CD4 Tcm","2" = "CD8 TE1","3" = "CD8 TEM1","4" = "CD8 Tscm",
+                   "5" = "CD8 TEM2","6" = "CD8 TE2", "7" = "CD4 Tscm","8" = "CD8 TEM3","9" = "CD8 TEM4",
+                   "10" = "CD4 Naive","11" =  "NKT","12" = "MAIT","13" = "Treg",
+                   "14" = "CD8 Tcm","15" = "CD8 TEM5","16" = "CD8 Naive","17" = "γδT",
+                   "18" =  "CD8 TE3","19" =  "U1","20" ="CD8 TEM6","21" = "U2",
+                   "22" = "IFT1 T")
+Tcell$Celltype <- cluster_names[Tcell$seurat_clusters]
+Tcell$Celltype <- factor(Tcell$Celltype, levels = c("CD4_Na_TCF7","CD4_Tscm_FAS","CD4_Tcm_FOS","Treg",
+                                                    "CD8_Na_LEF1",  "CD8_Tcm_CD28",
+                                                    "CD8_Tem_GIMAP4","CD8_Tem_IFNG", 
+                                                    "CD8_Ttm_GNLY", "CD8_Ttm_IKZF2", "CD8_Ttm_THEMIS",
+                                                    "CD8_Te_ASCL2", "CD8_Te_IFNG", "CD8_Te_IFIT1","CD8_Te_S100B",
+                                                    "CD3_Ex_LAG3", "MAIT", "NKT","γδT"))
+cluster_names <- c("CD4 Naive" = "CD4_Na_TCF7","CD4 Tcm" = "CD4_Tcm_FOS",
+                   "CD4 Tscm" = "CD4_Tscm_FAS","CD8 Naive" = "CD8_Na_LEF1",
+                   "CD8 Tcm" = "Ex_LAG3","CD8 TE1" = "CD8_Te_ASCL2", "CD8 TE2" = "CD8_Te_IFNG",
+                   "CD8 TE3" = "CD8_Te_S100B","CD8 TEM1" = "CD8_Ttm_GNLY",
+                   "CD8 TEM2" = "CD8_Tem_IFNG","CD8 TEM3" =  "CD8_Tem_GIMAP4","CD8 TEM4" = "CD8_Ttm_IKZF2",
+                   "CD8 TEM5" = "CD8_Ttm_GNLY","CD8 TEM6" = "CD8_Ttm_THEMIS","CD8 Tscm" = "CD8_Tcm_CD28",
+                   "IFT1 T" = "CD8_Te_IFIT1","MAIT" = "MAIT",
+                   "NKT" =  "NKT","Treg" =  "Treg","U1" ="U1","U2" = "U2",
+                   "γδT" = "γδT")
+Tcell$Celltype <- cluster_names[Tcell$Celltype]
+Tcell <- Tcell[,!Tcell$Celltype %in%c('U2','U1')]
+
+DimPlot(Tcell,group.by = 'Celltype1',label = T)
+DotPlot(Tcell,features = c('CD3E','CD3D','CD4','CD8A','TCF7','LEF1','IL7R','CCR7','FOS','FAS','CD28',
+                              'PRF1','GNLY','GZMK','GZMH',
+                              'GIMAP4','THEMIS','ASCL2','IFNG','IFIT1','S100B',
+                              'IKZF2','FOXP3',
+                              'CD69','LAG3','TOX','TIGIT','CTLA4','PDCD1','MKI67','ITGAE',
+                              'NCAM1',"FCGR3A","KLRC2",'SLC4A10',
+                              'TRAV1-2','TRDC','TRGV9'),
+        group.by = 'Celltype',
+        cols = c('#A7A3B2','#2F0B95'))+coord_flip()+
+  theme(axis.text.y = element_text(size = 10))+
+  theme(axis.text.x = element_text(size=10,angle=90,vjust = 0.5,hjust = 1),
+        legend.title= element_text(size = 10))
+```
+
+#T比例
+```{r}
+#治疗前后比例分布
+t <- as.matrix(prop.table(table(Tcell$condition3, Tcell$Celltype3), margin = 2)*100) 
+p <- as.data.frame(t)
+mycolor <- c('#76A4C5','#EC88BA','#F2A6C1','#9684C2','#AFA0D4')
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 0,hjust = 0.5,vjust = 0.5))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_fill_manual(values =mycolor)+
+  ylab("Proportion(%)")
+
+#每个细胞类型的每组
+t <- as.matrix(prop.table(table(Tcell$condition3,Tcell$Celltype), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 90,hjust = 1,vjust = 0.5))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_fill_manual(values =mycolor)+
+  ylab("Proportion(%)")
+
+#每个细胞类型的每组
+t <- as.matrix(prop.table(table(Tcell$condition3,Tcell$Celltype), margin = 2)*100) 
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 90,hjust = 1,vjust = 0.5))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_fill_manual(values =mycolor)+
+  ylab("Proportion(%)")
+
+#OR
+# 提供数据治疗前后
+cr_counts <-  c(652, 336, 322, 53, 49, 117, 187, 161, 211, 144, 51, 110, 163, 1, 47, 59, 37, 72, 36)#CR治疗前
+ctrl_counts <-  c(797, 490, 530, 125, 67, 191, 276, 358, 533, 271, 100, 283, 345, 1, 211, 81, 77, 107, 82)#CR治疗后
+
+cr_counts <-  c(109, 111, 86, 34, 17, 0, 79, 37, 96, 52, 33, 104, 92, 4, 8, 28, 15, 28, 30)#NR治疗前
+ctrl_counts <-  c(244, 256, 276, 72, 37, 0, 82, 85, 100, 44, 31, 93, 181, 1, 6, 74, 18, 42, 23)#NR治疗后
+
+cell_types <- c("CD4_Na_TCF7","CD4_Tscm_FAS","CD4_Tcm_FOS","Treg",
+                "CD8_Na_LEF1",  "CD8_Tcm_CD28",
+                "CD8_Tem_GIMAP4","CD8_Tem_IFNG", 
+                "CD8_Ttm_GNLY", "CD8_Ttm_IKZF2", "CD8_Ttm_THEMIS",
+                "CD8_Te_ASCL2", "CD8_Te_IFNG", "CD8_Te_IFIT1","CD8_Te_S100B",
+                "CD3_Ex_LAG3", "MAIT", "NKT","γδT")
+# 创建一个函数来计算OR值、log2OR值和Fisher's精确检验的p值
+calculate_OR_and_pvalue <- function(cr_count, ctrl_count) {
+  # 计算OR值
+  odds_ratio <- (cr_count[1] / cr_count[2]) / (ctrl_count[1] / ctrl_count[2])
+  # 计算Fisher's精确检验的p值
+  fisher_test <- fisher.test(matrix(c(cr_count, ctrl_count), nrow = 2))
+  p_value <- fisher_test$p.value
+  # 计算log2OR值
+  log2_odds_ratio <- log2(odds_ratio)
+  # 返回OR值、log2OR值和Fisher's精确检验的p值
+  return(list(OR = odds_ratio, log2_OR = log2_odds_ratio, p_value = p_value))
+}
+
+# 创建一个空列表来存储OR值、log2OR值和Fisher's精确检验的p值
+result_list <- list()
+
+# 循环遍历每种细胞类型，并计算OR值、log2OR值和Fisher's精确检验的p值
+for (i in seq_along(cell_types)) {
+  cr_count <- c(cr_counts[i], sum(cr_counts))
+  ctrl_count <- c(ctrl_counts[i], sum(ctrl_counts))
+  result_list[[i]] <- calculate_OR_and_pvalue(cr_count, ctrl_count)
+}
+
+# 将结果组合成数据框
+result_df <- data.frame(Cell_Type = cell_types, OR_Value = sapply(result_list, function(x) x$OR), 
+                        log2_OR_Value = sapply(result_list, function(x) x$log2_OR),
+                        p_value = sapply(result_list, function(x) x$p_value))
+
+# 输出结果
+print(result_df)
+###CR治疗前后 '#EC88BA','#F2A6C1'
+result_df$color <- ifelse(result_df$log2_OR_Value > 0, '#9684C2','#AFA0D4')
+result_df$significance <- ifelse(result_df$p_value < 0.001, "***", ifelse(result_df$p_value < 0.01, "**", ifelse(result_df$p_value < 0.05, "*", "n.s")))
+
+result_df$Cell_Type <- factor(result_df$Cell_Type, levels = c("CD4_Na_TCF7","CD4_Tscm_FAS","CD4_Tcm_FOS","Treg",
+                                                              "CD8_Na_LEF1",  "CD8_Tcm_CD28",
+                                                              "CD8_Tem_GIMAP4","CD8_Tem_IFNG", 
+                                                              "CD8_Ttm_GNLY", "CD8_Ttm_IKZF2", "CD8_Ttm_THEMIS",
+                                                              "CD8_Te_ASCL2", "CD8_Te_IFNG", "CD8_Te_IFIT1","CD8_Te_S100B",
+                                                              "CD3_Ex_LAG3", "MAIT", "NKT","γδT"), ordered = TRUE)
+# Plot
+ggplot(result_df, aes(x = Cell_Type, y = log2_OR_Value, fill = color)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = significance, 
+                y = ifelse(log2_OR_Value >= 0, log2_OR_Value-0.05, log2_OR_Value)), 
+            vjust = ifelse(result_df$log2_OR_Value >= 0, -0.75, 1.5), size = 4) +  # 调整标签位置
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5),
+        axis.text = element_text(size = 10),  # 调整两个坐标轴的文本大小
+        axis.ticks = element_line(size = 0.5),  # 调整坐标轴刻度的粗细
+        panel.grid.major = element_blank(),  # 移除主要网格线
+        panel.grid.minor = element_blank(),  # 移除次要网格线
+        axis.line = element_line(color = "black", size = 0.5),  # 线条细化
+        panel.border = element_blank(),  # 移除面板边框
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +  # 移除面板背景
+  labs(x = "", y = "Enrichment
+(log2OR)", title = "NR patient before and after treatment") +  # 更改坐标轴和标题的标签为中文
+  scale_fill_identity() 
+```
+
+#Treg
+```{r}
+DimPlot(Tcell,group.by = 'Celltype',split.by = 'condition3',cols = c('grey','grey','grey','#BC9D00','grey',                                       'grey','grey','grey','grey','grey',
+                                                                        'grey','grey','grey','#7F96FF','#BC81FF',
+                                                                     'grey','grey','grey','grey'))
+#CTLA4小提琴图 基因表达按照group分组
+features <-c("CTLA4","IKZF2")
+expr = t(as.matrix(T4@assays$RNA@data[features,]))
+posi= match(rownames(expr),rownames(T4@meta.data))
+ts = cbind(expr,T4@meta.data[posi,c("condition3","Celltype")])
+my_comparisons <- list(c("CR-Pre", "CR-Post"),c("NR-Pre", "NR-Post"),
+                       c("CR-Pre", "NR-Pre"),c("CR-Post", "NR-Post"),
+                       c("HC", "CR-Pre"),c("HC", "NR-Pre")
+                       )
+ggplot(ts, aes(x =condition3, y =IKZF2, fill = condition3)) +
+  geom_violin(trim = F, scale = "area", width = 1, alpha = 0.9) +
+  # 绘制箱线图
+  geom_boxplot(width = 0.25, outlier.shape = NA, alpha = 1) +
+  # 绘制置信区间
+  #geom_errorbar(stat = "summary", fun.data = "median_hilow", width = 0.1, color = "black") +
+  # 设置图例
+  labs(x = "", y = "Gene Expression Level", fill = "Group") +ggtitle("IKZF2") +
+  scale_fill_manual(values =mycolor )+#c('#7030a0','#0070c0','#ff5050','#f78832','#70ad47')
+  # 主题设置
+  theme_minimal()+
+  theme(axis.text = element_text(size = 10,color = "black"),
+        panel.grid.major = element_blank(),  # 去掉主要网格线
+        panel.grid.minor = element_blank(),  # 去掉次要网格线
+        axis.line = element_line(size = 0.6, color = "black"),  # 添加轴线
+        axis.ticks = element_line(size = 0.6),  # 添加刻度线
+        axis.text.x = element_text(angle = 90,vjust = 0.5, hjust = 1),  # 调整 x 轴文本角度和位置
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)# 去掉面板背景
+  )+stat_compare_means(comparisons = my_comparisons,method = "wilcox.test",label = "p.signif",tip.length=0)
+
+#热图每个组之间差异及表达量
+expression_data <- FetchData(T4, 
+                             vars = c("IKZF2", "Celltype", "condition3"))
+# 2. 计算平均表达量
+avg_expression <- aggregate(IKZF2 ~ Celltype + condition3, 
+                            data = expression_data, 
+                            FUN = mean)
+
+# 3. 计算统计差异
+# 假设第二组作为对照组，需要你自己去看
+control_group <- unique(expression_data$condition3)[3]
+
+# 创建一个空的数据框来存储统计结果
+stats_results <- data.frame()
+expression_data <- expression_data[complete.cases(expression_data), ]
+for(cell in unique(expression_data$Celltype)) {
+  for(cond in unique(expression_data$condition3)) {
+    if(cond != control_group) {
+      # 提取当前组和对照组的数据
+      current_data <- subset(expression_data, Celltype == cell & condition3 == cond)$IKZF2
+      control_data <- subset(expression_data, Celltype == cell & condition3 == control_group)$IKZF2
+      
+      test_result <- wilcox.test(current_data, control_data)
+      
+      # 添加结果到数据框
+      stats_results <- rbind(stats_results,
+                             data.frame(Celltype = cell,
+                                        condition3 = cond,
+                                        p.value = test_result$p.value))
+    }
+  }
+}
+
+# 添加显著性标记
+stats_results$stars <- ifelse(stats_results$p.value < 0.001, "***",
+                              ifelse(stats_results$p.value < 0.01, "**",
+                                     ifelse(stats_results$p.value < 0.05, "*", "")))
+
+# 4. 转换为矩阵格式
+expression_matrix <- reshape2::dcast(avg_expression, 
+                                     Celltype ~ condition3, 
+                                     value.var = "IKZF2")
+
+# 5. 转换为矩阵
+matrix_data <- as.matrix(expression_matrix[,-1])
+rownames(matrix_data) <- expression_matrix$Celltype
+
+# 6. 合并平均值和显著性标记
+avg_expression <- merge(avg_expression, stats_results, 
+                        by = c("Celltype", "condition3"), 
+                        all.x = TRUE)
+head(avg_expression)
+# 7. 绘制热图
+ggplot(avg_expression, aes(x = condition3, y = Celltype, fill = IKZF2)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "navy", 
+                       mid = "white", 
+                       high = "red", 
+                       midpoint = mean(avg_expression$IKZF2)) +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),  # 去掉主要网格线
+        panel.grid.minor = element_blank(),  # 去掉次要网格线
+    legend.position = "right",
+    legend.box.just = "center",
+    legend.justification = "center",
+    legend.key.height = unit(1, "cm"),
+    legend.key.width = unit(0.5, "cm"),
+    axis.text.x = element_text(angle = 90, 
+                               hjust = 1, 
+                               size = 10),
+    axis.text.y = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 10)) +
+  labs(fill = "Expression",
+       x = "",
+       y = "Cell Type") +
+  # 添加显著性标记，不显示具体数值
+  geom_text(aes(label = ifelse(!is.na(stars),paste0(round(IKZF2, 2), stars),round(IKZF2, 2))), size = 3, na.rm = TRUE) +
+  ggtitle("IKZF2") +  # 添加标题
+  theme(plot.title = element_text(hjust = 0.5,vjust = 0.5))
+```
+

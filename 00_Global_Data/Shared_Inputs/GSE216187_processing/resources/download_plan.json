@@ -1,0 +1,58 @@
+[
+  {
+    "GSM": "GSM6660161",
+    "group": "REL",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660161/suppl/GSM6660161_REL_barcodes_updated.tsv.gz",
+    "filename": "GSM6660161_REL_barcodes_updated.tsv.gz",
+    "path": "data/raw/GSM6660161_REL_barcodes_updated.tsv.gz"
+  },
+  {
+    "GSM": "GSM6660161",
+    "group": "REL",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660161/suppl/GSM6660161_REL_donors.tsv.gz",
+    "filename": "GSM6660161_REL_donors.tsv.gz",
+    "path": "data/raw/GSM6660161_REL_donors.tsv.gz"
+  },
+  {
+    "GSM": "GSM6660161",
+    "group": "REL",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660161/suppl/GSM6660161_REL_features.tsv.gz",
+    "filename": "GSM6660161_REL_features.tsv.gz",
+    "path": "data/raw/GSM6660161_REL_features.tsv.gz"
+  },
+  {
+    "GSM": "GSM6660161",
+    "group": "REL",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660161/suppl/GSM6660161_REL_matrix.mtx.gz",
+    "filename": "GSM6660161_REL_matrix.mtx.gz",
+    "path": "data/raw/GSM6660161_REL_matrix.mtx.gz"
+  },
+  {
+    "GSM": "GSM6660162",
+    "group": "CR",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660162/suppl/GSM6660162_CR_barcodes.tsv.gz",
+    "filename": "GSM6660162_CR_barcodes.tsv.gz",
+    "path": "data/raw/GSM6660162_CR_barcodes.tsv.gz"
+  },
+  {
+    "GSM": "GSM6660162",
+    "group": "CR",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660162/suppl/GSM6660162_CR_donors.tsv.gz",
+    "filename": "GSM6660162_CR_donors.tsv.gz",
+    "path": "data/raw/GSM6660162_CR_donors.tsv.gz"
+  },
+  {
+    "GSM": "GSM6660162",
+    "group": "CR",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660162/suppl/GSM6660162_CR_features.tsv.gz",
+    "filename": "GSM6660162_CR_features.tsv.gz",
+    "path": "data/raw/GSM6660162_CR_features.tsv.gz"
+  },
+  {
+    "GSM": "GSM6660162",
+    "group": "CR",
+    "url": "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM6660nnn/GSM6660162/suppl/GSM6660162_CR_matrix.mtx.gz",
+    "filename": "GSM6660162_CR_matrix.mtx.gz",
+    "path": "data/raw/GSM6660162_CR_matrix.mtx.gz"
+  }
+]

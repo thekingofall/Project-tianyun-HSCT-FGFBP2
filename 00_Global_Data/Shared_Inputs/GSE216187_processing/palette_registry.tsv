@@ -1,0 +1,10 @@
+palette_id	order	group	label	hex
+GSE216187_group	1	GSE216187_group	CR	#3B6C80
+GSE216187_group	2	GSE216187_group	REL	#B36350
+GSE216187_celltype	1	GSE216187_celltype	CD4 T	#316CA1
+GSE216187_celltype	2	GSE216187_celltype	CD8 T	#0C9BAA
+GSE216187_celltype	3	GSE216187_celltype	Gamma-delta T	#80538D
+GSE216187_celltype	4	GSE216187_celltype	MAIT	#C3AB43
+GSE216187_celltype	5	GSE216187_celltype	Progenitors	#39B793
+GSE216187_celltype	6	GSE216187_celltype	Myeloid	#778F6B
+GSE216187_celltype	7	GSE216187_celltype	T cells	#8AA6BA

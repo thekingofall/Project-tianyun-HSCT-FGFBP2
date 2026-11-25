@@ -1,0 +1,3 @@
+GSM	group	raw_matrix_columns	genotyped_cell_records	demux_singlets	demux_doublets	demux_unassigned	retained	SoupX_rho
+GSM6660161	REL	6794880	6438	5538	860	40	4465	0.012
+GSM6660162	CR	6794880	7085	6427	532	126	4036	0.023

@@ -1,0 +1,458 @@
+#计算基因得分
+# 基因集------------------------
+Stemness <- c(
+  "HSF1", "AKR1C3", "CD34","EMP1", "CDK6",
+  "KIAA0125", "DPYSL3", "MMRN1", "LAPEM4B", "ARHGAP22", "NYBRIN", "ZBTB46", "DNMT3B")
+
+
+"CRHBP", "AVP", "NPR3", "LINC02573", "FAM30A", "MYCT1", "CRYGD", 
+"EGFL7", "BEX1", "CD34", "ZFAS1", "PROM1", "HTR1F", "LINC01122",
+"CYTL1", "MSRB3", "BAALC", "PRKG2", "HOXB-AS3", "RACK1", "RBPMS",
+"C9orf43", "RPS24", "IL12A-AS1", "EBPL", "SLC1A6", "RPL15", "RPL26", 
+"NPDC1", "NKAIN2", "HINT1", "HMGA2", "GUCY1A1", "CALN1", "HLF",
+"CDH7", "MECOM", "DLK1", "CD164", "KRT8", "CHRM3", "EMCN", 
+"GCSAML", "CCDC42", "EEF2", "ADGRG6", "LAPTM4B", "RPS9",
+"KRT18", "SYPL1", "ZNF521", "UCHL1", "HOXA9", "BEX2", "HOXB5", 
+"IL18", "BTF3", "BST2", "TMEM163", "ARMCX1", "NACA", "ARNTL2-AS1",
+"MFAP2", "ROBO4", "HOXA7", "GSTM5", "GNAI1", "FAM133A", "HOXA6", 
+"CCDC175", "EHD2", "DPPA4", "TCTEX1D1", "NRIP1", "CLEC9A", "SULT1C4",
+"DSG2", "PLOD2", "AC092171.3", "C3orf80", "EIF3L", "HOXA10-AS", 
+"TCEAL2", "ZBTB8A", "EPCAM-DT", "TLCD5", "ITGA9", "SAMD13", "HOXA10",
+"EPB41L4A-AS1", "ATP1B1", "UBR5-AS1", "MIR1915HG", "CTSF", "HOXA3",
+"CBX2", "TCEAL4", "PCDH17", "PRDM16-DT", "BAALC-AS2", "RSL1D1",
+"NKX2-3", "TAOK3", "NPM2", "ATP2C1", "HOXB6", "SPOCK3", "CCNB1IP1",
+"NAP1L3", "CASC15", "ELMO1", "RASSF9", "H2AW", "NYNRIN", "MYCNOS", 
+"FBXW9", "HOXB3", "TAF1D", "SLC8A3", "CYYR1", "WASIR2", "BSPRY", 
+"PCBD1", "EIF3D", "BEX4", "CCDC171", "FGD5", "ABCB1", "ALCAM", 
+"ANK3", "ASXL1", "ATP8B4", "BCL11A", "BTBD11", "RGCC", "OSER1",
+"SLC17A9", "C2orf69", "CACNB2", "CD109", "CFH", "COL5A1", "CRIM1",
+"CYLD", "DACH1", "DAPK1", "DDX5", "DNAJB9", "DRAM1", "DST", "DUSP6",
+"EIF5", "ELK3", "EPC1", "ERG", "FAM169A", "FAM3C", "KDM2A", "RPS20P22",
+"FLT3", "FNBP1", "FOXO1", "FRMD4B", "GCNT2", "GNL1", "IPO11", "HES1",
+"H2BC10", "H2BC6", "H2BC8", "H2BC5", "H2AC18", "HLA-DRB4", "HOPX",
+"HOXA5", "HOXB2", "INPP4B", "INSIG1", "ITSN2", "JUN", "KBTBD8", 
+"SEL1L3", "KLF4", "KSR1", "FAM106A","LONP2", "LPP", "MAFK", "MCTP1", 
+"MEIS1", "KMT2A", "MLLT3", "MREG", "MSI2", "MYO5C", "KAT6A", "PNP", 
+"OGT", "PAM", "PCNX1", "PDE10A", "PLSCR4", "PPP1R16B", "PRKCH", "PTK2",
+"RBM7", "RIMKLB", "RLIM", "RNF125", "RPL31", "RUNX2", "MSMO1", "PNISR", 
+"SLC25A36", "SMARCA1", "SOCS2", "SPINK2", "SPTBN1", "ST3GAL6", "TFPI", 
+"TMEM107", "TMEM200A", "TMEM38B", "TPT1", "TCEAL9", "WDR91", "YES1", 
+"ZBTB4", "ZDHHC21", "ZEB1", "ZNF165", "TCF12", "RCSD1", "SMARCA2", 
+"PAN3-AS1", "AC245407.2", "ADAR", "TCIRG1", "CCN3", "NLE1", "UBAP2L"
+Myeloid <- c("RNF41", "CDK6", "TRIB1", "LRRC17", "FSTL3", "MYL9", "PIAS3", "HAX1", 
+             "CEBPB", "CIB1", "TOB2", "FAXDC2", "LILRB1", "LILRB4", "LILRB3", 
+             "WDR5", "KAT7", "FAM210B", "H4-16", "CCR1", "LEO1", "H3C14", "OCSTAMP", 
+             "ANKRD54", "TMEM178A", "SLC9B2", "PPARGC1B", "CREB1", "CREBBP", 
+             "ZBTB46", "MAPK14", "CSF1", "CSF2", "CSF3", "CSF3R", "IL34", "IL23R", 
+             "CTNNB1", "ZFPM1", "TMEM64", "ZNF675", "JAG1", "AGO3", "AGO4", "EP300",
+             "ESRRA", "ETS1", "EVI2B", "PTK2B", "FBN1", "MTURN", "FES", "ACIN1", 
+             "FOXO3", "TNRC6B", "FOS", "RBFOX2", "BRD1", "MTOR", "FSHB", "GABPA", 
+             "TRIM58", "SIN3A", "L3MBTL1", "GATA1", "GATA2", "AGO1", "FOXP1", 
+             "TNRC6A", "GNAS", "GP1BA", "SIGLEC15", "DLL1", "SENP1", "GPR171", 
+             "H3-3A", "H3-3B", "HCLS1", "HDAC1", "NCKAP1L", "HIF1A", "HLA-DRB1",
+             "HMGB2", "HMGB3", "HOXA5", "HOXA7", "HOXA9", "HOXB8", "APCS", "PRMT1",
+             "HSPA1A", "HSPA1B", "HSPA9", "H3C15", "RAB7B", "ID2", "IFNG", "IL4",
+             "IL5", "IL12B", "IL17A", "INHA", "INHBA", "INPP5D", "IRF7", "ITGA2B", 
+             "EIF6", "ITPKB", "JUN", "LGALS3", "LIF", "LOX", "ARNT", "LTF", "LYN", 
+             "MIR125B1", "MIR125B2", "MIR145", "MIR221", "MIR222", "MIR223", "MEF2C",
+             "MEIS1", "MEIS2", "KITLG", "MITF", "KMT2A", "MOV10", "MPL", "RHEX",
+             "MYC", "NF1", "NFE2", "NFKBIA", "NME1", "NME2", "CNOT4", "NOTCH2", 
+             "ROR2", "IL20", "LEF1", "CLDN18", "IL23A", "KLF13", "PF4", "PIK3R1",
+             "ATP6AP1", "TREM2", "POU4F1", "POU4F2", "PAF1", "P4HTM", "MED1", 
+             "NCAPG2", "TESC", "PRMT6", "FBXW7", "H4C15", "PRKCA", "PRKCB", "PRKCQ",
+             "KMT2E", "PRKDC", "B2M", "GPR137", "CTNNBIP1", "PITHD1", "TNRC6C",
+             "PTPN2", "PURB", "KMT2C", "RARA", "RARG", "RB1", "RBBP5", "SMAP1",
+             "BGLAP", "CEACAM1", "CCL3", "SFRP1", "RBM15", "H3C13", "SPI1", 
+             "ZFP36L1", "STAT1", "STAT3", "STAT5B", "TAL1", "TCTA", "TFE3", 
+             "TGFB1", "THBS1", "THPO", "KLF10","TLR3", "TLR4", "GPR137B", "TNF",
+             "C1QC", "TRAF6", "TYROBP", "ZFP36", "ZNF16", "CA2", "ZBTB16", "CDC73",
+             "NR4A3", "WDR61", "NDFIP1", "KMT2D", "GPR68", "CAMK4", "DCSTAMP",
+             "H4C9", "H3C1", "H3C4", "H3C3", "H3C6", "H3C11", "H3C8", "H3C12", 
+             "H3C10", "H3C2", "H4C1", "H4C4", "H4C6", "H4C12", "H4C11", "H4C3", 
+             "H4C8", "H4C2", "H4C5", "H4C13", "H4C14", "CASP8", "PRXL2A", "CUL4A",
+             "DPY30", "UBASH3B", "SCIN", "TNFSF11", "RUNX1", "CBFB", "RIPK1", "FADD",
+             "KAT2B", "LDB1", "H3C7", "ASH2L", "ACVR1B", "ACVR2A", "CD4", "GPR55",
+             "ADIPOQ", "CD101", "CARTPT", "ISG15", "CTR9", "CD74", "SETD1A", "KMT2B", 
+             "RASSF2", "MAFB", "BCL2L11", "SH2B3", "TRIM10", "MAEA", "ADAR", "IKZF1",
+             "KLF2", "MERTK", "CEBPG", "KLF1", "ADD1", "DNASE2", "EPAS1", "EPB42",
+             "DMTN", "EPO", "ERCC2", "ALAS1", "ETV2", "ALAS2", "FANCC", "FCER1G",
+             "ADGRF5", "JMJD6", "UFL1", "NCSTN", "SLC7A11", "G6PD", "GATA3", "AMPD3",
+             "FLVCR1", "HIPK2", "TMOD3", "ANXA1", "HBZ", "HMGB1", "HMOX1", "HOXB6",
+             "HCAR2", "IL6", "CXCR2", "IREB2", "JAK2", "JAK3", "KIT", "SMAD5", "MB",
+             "NFE2L1", "SLC11A2", "PRDX1", "FOXP3", "AHSP", "ZBTB7A", "PDE4B", 
+             "TMEM14C", "PIK3CB", "PIK3CD", "PKNOX1", "SLC25A38", "SOX6", "LYAR",
+             "AXL", "BAK1", "BAX", "ARID4A", "RHAG", "BCL6", "RPS14", "RPS17", 
+             "RPS19", "RPS24", "BMP4", "SLC4A1", "SOD1", "SP3", "BPGM", "SRF",
+             "ADAM17", "TGFBR3", "THRA", "CCR2", "VEGFA", "UBA5", "CDK5RAP3",
+             "MPIG6B", "BAP1", "CASP3", "JAM3", "DYRK3", "L3MBTL3", "C15orf41", 
+             "MFHAS1", "ATP5IF1", "SFXN1", "PTBP3", "PRSS57", "MPO", "AZU1", "ELANE",
+             "PRTN3", "NPW", "C1QTNF4", "CLEC11A", "CPA3", "CTSG", "CALR", "RNASE3",
+             "HSPB1", "STAR", "SUCNR1", "MIF", "SNHG19", "HGF", "TMEM258", "VAT1", 
+             "PLPPR3", "SH3D21", "SNORC", "GPR12", "ERLIN1", "P4HB", "CEACAM6")
+
+Lymphoid <- c("ADA", "BCL2L11", "TCIRG1", "TNFSF13B", "RIPK3", "CORO1A", "TNFRSF13C",
+              "SPNS2", "DOCK11", "RC3H1", "TSC22D3", "GAPT", "AKT1", "TNFRSF13B",
+              "ABL1", "LAT", "SIT1", "SLC39A3", "SLC40A1", "NCKAP1L", "HIF1A",
+              "FAS", "IL2", "IL2RA", "JAK3", "LGALS9", "LMO1", "LYN", "MIR17HG", 
+              "MEF2C", "MIF", "P2RX7", "FOXP3", "PMAIP1", "RC3H2", "PPP2R3C", 
+              "PPP3CB", "DOCK10", "PKN1", "GPAM", "BAK1", "SLC46A2", "BAX", "RAG1",
+              "BCL2", "TNFRSF17", "SKIL", "SOS1", "SPTA1", "STAT5B", "TNFAIP3",
+              "CACNA1F", "CASP3", "ZC3H8", "FOXN1", "GPR174", "TNFSF14", "FADD",
+              "BCL10", "DNAJA3", "CCNB2", "CD74", "BATF", "NUDT21", "TREX1",
+              "FLCN", "ZBTB1", "FLT3", "GATA3", "HES1", "KIT", "HES5", "LIG4",
+              "NOTCH1", "PRKDC", "SHH", "BMP4", "SOX4", "SPI1", "FNIP1", "RPS6KA2",
+              "METTL3", "TNFAIP2", "SLC24A3", "KMT5B", "MEF2A", "PLXND1", "BASP1",
+              "IGHM", "NPIPB3", "MCM3AP", "LPIN1", "STK32B", "ARHGAP45", "OSBPL3",
+              "TNS3", "NLRP1", "TMEM41B", "MED13L", "SLC2A5", "ITIH4", "BAALC", 
+              "MN1", "ADGRE2", "ABCA1", "SLC35E2A", "TPR", "IQSEC1", "SATB1", 
+              "P2RY14", "DOCK1", "FAM30A", "ITSN2", "BTK", "SH3TC1", "RUNX3", 
+              "KDM3A", "RBBP6", "TBCD", "COBL", "EVL", "SF3B1", "LRRFIP1", "SCN3A",
+              "NUDT3", "UBR2", "TARBP1", "TRIM33", "NACA", "HLX", "RAB31", "MACF1",
+              "BCL6", "RAB14", "ARHGAP25", "TRIB2", "TRAF4", "KIAA0087", "TCF4",
+              "USP34", "CHD3", "CCR9", "DPEP2", "MSL1", "TENT4A", "HNRNPA1", 
+              "SMARCA4", "ATR", "NCOR2", "CYTH4", "KNTC1", "SPON1", "C11orf21", 
+              "SETBP1", "CCNL1", "TRAF5", "SLC38A1", "PGGHG", "PNN", "RERE", 
+              "PALLD", "EIF4A1", "ADAM28", "TRAF3IP3", "PRKCB", "NF1", "SLC33A1",
+              "SETD5", "LUNAR1", "SFPQ", "KLF3-AS1", "ITGA4", "DDX21", "RBM39", 
+              "IRF8", "CYGB", "UMODL1", "AGPS", "TRBVB", "PCAT14", "MFAP4", "ENAM",
+              "LAIR1", "CD200")
+Erythroid <- c("IL3", "IL9", "KITLG", "CSF2", "IL1A", "CSF3", "EPO", "TGFB2", "IGF1",
+               "IL11", "FLT3", "CCL3", "TGFB3", "TGFB1", "IL6", "ZFPM1", "RBFOX2",
+               "GATA1", "SENP1", "TGFBR3", "CDK5RAP3", "SH2B3", "MAEA", "KLF2", 
+               "FAM210B", "EPB42", "DMTN", "ERCC2", "ALAS1", "ALAS2", "ADGRF5", 
+               "JMJD6", "BRD1", "G6PD", "TRIM58", "FLVCR1", "TMOD3", "HBZ", 
+               "NCKAP1L", "RHEX", "SLC11A2", "ZBTB7A", "MED1", "SOX6", "LYAR",
+               "ARID4A", "RHAG", "BCL6", "SLC4A1", "BPGM", "SRF", "TAL1", "L3MBTL3",
+               "PTBP3", "TRIM10", "CDK6", "ADAR", "IKZF1", "CEBPG", "KLF1", "KAT7",
+               "ADD1", "ANKRD54", "MAPK14", "DNASE2", "EPAS1", "ETS1", "ETV2",
+               "ACIN1", "FOXO3", "UFL1", "GATA2", "GATA3", "AMPD3", "HIPK2", "HCLS1",
+               "HIF1A", "HMGB2", "HMOX1", "HOXA5", "HOXB6", "PRMT1", "HSPA1A", 
+               "HSPA1B", "HSPA9", "ID2", "INHA", "INHBA", "INPP5D", "IREB2", "JAK2", 
+               "JAK3", "KIT", "ARNT", "LYN", "MIR221", "MIR222", "SMAD5", "MB",
+               "NFE2L1", "PRDX1", "AHSP", "TMEM14C", "KLF13", "PKNOX1", "P4HTM",
+               "NCAPG2", "SLC25A38", "AXL", "KMT2E", "PRKDC", "B2M", "PTPN2", 
+               "RB1", "SMAP1", "RPS14", "RPS17", "RPS19", "RPS24", "BMP4", "SP3",
+               "SPI1", "ZFP36L1", "STAT1", "STAT3", "STAT5B", "THRA", "VEGFA", 
+               "ZFP36", "ZNF16", "UBA5", "MPIG6B", "CASP3", "DYRK3", "C15orf41",
+               "LDB1", "ACVR1B", "ACVR2A", "MFHAS1", "ATP5IF1", "SFXN1", "ISG15",
+               "MAFB", "PCAT18", "SERPINE2", "MAP7", "MEST", "AC055874.1", "RYR3", 
+               "NET1", "FAM124B", "STAT5A", "TRIB2", "GIHCG", "ZNF385D", "PKIG",
+               "STXBP6", "SLC40A1", "PDZD8", "EMID1", "ATF7IP2", "AMHR2", "PHTF1",
+               "CCNG1", "APOC1", "NMU", "CNRIP1", "GAL", "NPM1", "CXADR", "FAM89A",
+               "PNMT", "GCSH", "C1QBP", "NME1", "FSCN1", "CDH1", "PVT1", "GRTP1",
+               "UNG", "MYC", "DNPH1", "DES", "DHRS11", "CCDC26", "CENPV", "RPL37A",
+               "SRM", "MYB", "AHCY", "UQCRH", "NPM3", "PEBP1", "SORD", "PMP22", 
+               "GNL3", "GSTM3", "TUFM", "MRPS25", "MORF4L2", "CASP6", "PPA1", 
+               "CHCHD2", "COL6A5", "TMEM97", "CMSS1", "NHP2", "AK2", "KCNK5",
+               "MRPL52", "SLC27A2", "COQ8A", "PGAP4", "MGST2", "GGCT", "FBL",
+               "RPL23", "PLTP", "DCTPP1", "AIG1", "TRIP6", "MUC1", "SELENOH", 
+               "MRPS23", "CLNS1A", "MICOS10", "CYP2E1", "HNRNPC", "ECHS1", "PHF6",
+               "HDAC7", "SLC39A4", "MRPS26", "EIF1AX", "TFAM", "FAM136A", "WDR43",
+               "NDUFAF2", "PNPO", "PABPC4", "DNAH14", "DMAC1", "RRP9", "SLC12A6",
+               "OLA1", "SDHAF3", "RPP40", "ATP5MD", "INTS13", "NDUFC2", "GTF3A",
+               "ABO", "GATA2-AS1", "NMI", "MDH2", "EXTL2")
+Megakaryocytic <- c("KDM1A", "PRKAR2B", "EHD3", "EHD2", "KIF1B", "HMG20B", "KIF26A",
+                    "KIF2A", "CDC42", "PRKACA", "ACTB", "TUBA3D", "KIFAP3", "CAPZB", 
+                    "KIF22", "CARMIL1", "KIF3C", "DOCK9", "DOCK3", "KIF9", "KIF16B",
+                    "RCOR1", "KIF4A", "CBX5", "JAK2", "ABL1", "ITPK1", "TUBB1",
+                    "KIF3B", "GATA1", "TUBB4A", "KLC3", "DOCK8", "GATA3", "RAD51C", 
+                    "AKAP10", "PRKAR1A", "EHD1", "SH2B3", "KIF20A", "PRKAR2A", "HDAC1",
+                    "CAPZA1", "DOCK7", "MFN2", "KIF21B", "MYB", "IFNA6", "IFNA8",
+                    "AKAP1", "KIF18A", "CDK2", "NFE2", "TUBA1B", "KIF25", "IRF1",
+                    "KLC1", "TUBA4A", "DOCK4", "KIF1C", "DOCK6", "KIF1A", "GATA5",
+                    "RBSN", "KIF3A", "H3-3B", "CABLES1", "DOCK2", "PHF21A", "MICAL1",
+                    "DOCK10", "RAC1", "GATA4", "VPS45", "KIF12", "IFNA21", "KLC4",
+                    "TUBB2A", "TUBB2B", "KIF23", "KIF11", "KIF20B", "CENPE", "KIF21A",
+                    "KIF2B", "GATA6", "TP53", "PRKACB", "KIF2C", "RAB5A", "DOCK11",
+                    "DOCK5", "AK3", "IFNA5", "IFNA16", "CABLES2", "DOCK1", "TUBA3E",
+                    "KIF5A", "SH2B2", "RACGAP1", "KIF26B", "H3-3A", "KIF15", "KIF6",
+                    "CDK5", "PRKACG", "KIF27", "WEE1", "TUBA1A", "TUBA1C", "KIFC2",
+                    "IRF2", "SIN3A", "ZFPM2", "KIF5B", "MFN1", "IFNB1", "JMJD1C", 
+                    "TUBB8B", "KLC2", "TUBB6", "SH2B1", "TUBAL3", "GATA2", "ZFPM1",
+                    "RAD51B", "H3C13", "TUBA8", "MAFF", "KIF18B", "IFNA10", "PRKAR1B",
+                    "TUBB4B", "IFNA2", "KIF19", "HBG2", "HDAC2", "MAFG", "H3C12", 
+                    "H3C4", "KIF13B", "IFNA1", "TUBA3C", "MAFK", "CAPZA2", "H3C14",
+                    "H3C15", "KIFC1", "HBE1", "HBG1", "IFNA7", "HBD", "KIF4B", 
+                    "IFNA14", "IFNA13", "IFNA17", "IFNA4", "TUBA4B", "HBB", "TUBB3",
+                    "TUBB8", "H3C8", "H3C6", "H3C11", "H3C1", "H3C7", "H3C10", 
+                    "H3C2", "H3C3", "ABI1", "WASF2", "CDKN2B", "MYL9", "CIB1", 
+                    "FAXDC2", "WDR5", "H4-16", "AGO3", "AGO4", "EP300", "MTURN", 
+                    "TNRC6B", "FLI1", "GABPA", "ZNF385A", "L3MBTL1", "AGO1", 
+                    "TNRC6A", "GP1BA", "HMGB2", "PRMT1", "RAB7B", "IL11", "ITGA2B",
+                    "EIF6", "KIT", "LOX", "MEF2C", "MEIS1", "KMT2A", "MOV10", "CNOT4",
+                    "PF4", "PIP4K2A", "MED1", "TESC", "PRMT6", "H4C15", "PRKCQ", 
+                    "KMT2E", "PITHD1", "TNRC6C", "PTPN6", "PTPN11", "KMT2C", "RBBP5",
+                    "RBM15", "SP3", "SRF", "TAL1", "THBS1", "THPO", "ZNF16", "UBA5",
+                    "NR4A3", "MPIG6B", "KMT2D", "H4C9", "H4C1", "H4C4", "H4C6", 
+                    "H4C12", "H4C11", "H4C3", "H4C8", "H4C2", "H4C5", "H4C13", 
+                    "H4C14", "DPY30", "SCIN", "RUNX1", "CBFB", "KAT2B", "ASH2L",
+                    "SETD1A", "KMT2B", "AL157895.1", "VWF", "LTBP1", "SPX", "WFDC1",
+                    "ITPKA", "PBX1", "PLEK", "MMRN1", "IGSF10", "TPM1", "PRTFDC1",
+                    "GJA4", "TGFB1I1", "ANXA3", "COL2A1", "MED12L", "ST6GAL2", 
+                    "DAD1", "NAA38", "GUCY1B1", "TCEAL9", "ADRA2A", "SLC18A2", 
+                    "CDH6", "RBPMS2", "ACTN1", "ADCY6", "ITGA2", "DTD1","TRPC6",
+                    "LTC4S", "PTGER3", "RAB38", "EFNB2", "STUM", "RAC3", "TPI1",
+                    "OLFM3", "TEAD4", "RAB3C", "HTR2A", "MGLL", "RYR2", "PPIF", 
+                    "DKK1", "TTC27", "PDIA5", "GSTT2B", "KALRN", "SLC37A1", 
+                    "EXOC3L4", "PRKG1", "PIEZO2", "KAZN", "MLEC", "KLHL13", 
+                    "EFHC2", "GLOD5", "MYH7", "STAC", "CDKN2A", "CASP3", 
+                    "STAT3", "CDKN1B", "BAK1", "CXCR4", "CDK1", "TGFB1", 
+                    "RASA1", "CXCL1", "GP9", "CASP9", "STAT5A", "MPL", "IL11RA", 
+                    "JUND", "IL1B", "CD9", "JARID2", "CBFA2T2", "PIK3C2B", "BCL2", 
+                    "MAPK14", "GP6", "MECOM", "STAT1", "FOS", "IL6R", "IL3RA", 
+                    "CBFA2T3", "BCL2L2", "PDGFA", "BAD", "PPBP", "ITGB3", "CXCL8",
+                    "CCNB1", "CCNE2", "CCNE1", "CCND3", "CCL5", "PDGFB", "IL1R1",
+                    "VEGFA", "MCL1", "RASGRP2", "IL6", "PDGFC", "MYC", "TSPAN32",
+                    "VAV3", "MERTK", "MYL12A", "PDPN", "GNA13", "ADAMTS13", "C1QTNF1",
+                    "CLIC1", "COL1A1", "COL1A2", "COL3A1", "COMP", "DGKK", "CSRP1",
+                    "PIK3R6", "ADRA2B", "ADRA2C", "DGKA", "DGKB", "DGKG", "DGKH",
+                    "DGKQ", "ADAMTS18", "ABAT", "DMTN", "F2", "F2R", "F2RL2", "F8",
+                    "FCER1G", "FGA", "FGB", "FGG", "FLNA", "METAP1", "FN1", "PIK3R5",
+                    "SLC7A11", "ALOX12", "FYN", "GNA11", "GNA12", "GNA15", "GNAQ",
+                    "GNAS", "GNB1", "GP1BB", "GP5", "C1GALT1C1", "HRG", "HSPB1",
+                    "TREML1", "APOE", "ILK", "ITPR1", "ITPR2", "ITPR3", "PEAR1",
+                    "BLOC1S3", "LCK", "LCP2", "LYN", "ARRB1", "ARRB2", "MYH9",
+                    "NOS3", "P2RX1", "P2RY1", "F11R", "CLEC1B", "PDGFRA", "PDPK1",
+                    "PF4V1", "SERPINE2", "PIK3CA", "PIK3CB", "PIK3CG", "PIK3R1",
+                    "PLA2G4A", "PLCG2", "PLSCR1", "GNG2", "BLOC1S4", "PRKCA", 
+                    "PRKCB", "AXL", "PRKCD", "PRKCE", "PRKCG", "PRKCH", "MAPK1",
+                    "MAPK3", "TRPC7", "RAF1", "RAP2B", "SAA1", "CELA2A", "CEACAM1",
+                    "BLK", "SELP", "P2RY12", "SRC", "STXBP1", "STXBP3", "SYK",
+                    "TEC", "THBD", "TLN1", "TLR4", "ACTG1", "TRPC3", "TXK", "TYRO3",
+                    "VAV1", "VAV2", "VCL", "YWHAZ", "FZD6", "FERMT3", "UBASH3B",
+                    "DGKZ", "DGKE", "DGKD", "WNT3A", "F2RL3", "FIBP", "DGKI", 
+                    "ENTPD2", "CD40", "CD40LG", "GNA14")
+Lymphoid2 <- c("ADA", "ADK", "AGER", "AIF1", "ANXA1", "ATAD5", "BCL2", "BCL6", "BLM", "BMI1",
+                   "BST1", "BTK", "BTNL2", "CARD11", "CARMIL2", "CCDC88B", "CCL5", "CCL19", "CCR2", "CCR7",
+                   "CD1D1", "CD1D2", "CD3E", "CD4", "CD6",
+                   "CD24A", "CD28", "CD38", "CD40", "CD40LG", "CD46", "CD55", "CD55B", "CD59A", "CD59B",
+                   "CD74", "CD80", "CD81", "CD86", "CD209A",
+                   "CD209B", "CD209C", "CD209D", "CD209E", "CD244A", "CD274", "CD276", "CD320", "CDKN1A", "CEACAM1",
+                   "CHRNB2", "CLCF1", "CORO1A", "CSF1R", "DHPS",
+                   "DNAJA3", "EFNB1", "EPHB2", "EPO", "FADD", "FGF10", "FLT3L", "FOXP3", "GPAM", "GPR183",
+                   "H2-DMb1", "H2-DMb2", "HAVCR2", "HES1", "HMGB1",
+                   "ICOSL", "IFNG", "IGF1", "IGF2", "IGFBP2", "IGHD", "IGHM", "IL1A", "IL1B", "IL2",
+                   "IL2RA", "IL3", "IL4", "IL5", "IL6", "IL6ST",
+                   "IL7", "IL12A", "IL12B", "IL12RB1", "IL13", "IL15", "IL18", "IL21", "IL23A", "IRGM1",
+                   "IRS2", "ITGAL", "JAK2", "JAK3", "KITL",
+                   "LEP", "MEF2C", "MIF", "MPL", "MYD88", "NCK1", "NCK2", "NCKAP1L", "NFATC2", "PDCD1LG2",
+                   "PELI1", "PNP", "PPP3CA", "PRKCQ", "PRLR",
+                   "PTPN22", "PTPRC", "PYCARD", "RASAL3", "RIPK2", "RPS3", "SASH3", "SELENOK", "SHH", "SLAMF1",
+                   "SLC4A1", "SLC7A1", "SLC39A10", "SPN",
+                   "SPTA1", "STAT5A", "STAT5B", "SYK", "TAC1", "TACR1", "TCF3", "TFRC", "TGFBR2", "TICAM1",
+                   "TIRAP", "TLR4", "TLR9", "TNFRSF4", "TNFRSF13C",
+                   "TNFSF4", "TNFSF9", "TNFSF13B", "TRAF6", "TYK2", "VAV3", "VCAM1", "VTCN1", "WNT3A", "XCL1",
+                   "ZAP70", "ZFP335", "ZP3")
+chemotaxis <- c("ABCC1", "ACKR2", "ACKR3", "ACKR4", "ADAM8", "ADAM10", "ADAM17", "AGR2", "AGTR1A", "AGTR1B",
+                "ALOX5", "ANO6", "ANXA1", "APP", "ARHGEF5", "ARHGEF16", "ARRB2", "BCAR1", "BIN2", "BSG",
+                "BST1", "C1QBP", "C3AR1", "C5AR1", "C5AR2", "CALR", "CAMK1D", "CCL1", "CCL2", "CCL3",
+                "CCL4", "CCL5", "CCL6", "CCL7", "CCL8", "CCL9", "CCL11", "CCL12", "CCL17", "CCL19",
+                "CCL19-PS1", "CCL19-PS3", "CCL19-PS4", "CCL19-PS5", "CCL19-PS6", "CCL20", "CCL21A", "CCL21B",
+                "CCL21C", "CCL21D", "CCL21E", "CCL21F", "CCL22", "CCL24", "CCL25", "CCL26", "CCL27A",
+                "CCL28", "CCN3", "CCR1", "CCR1L1", "CCR2", "CCR3", "CCR4", "CCR5", "CCR6", "CCR7",
+                "CCR8", "CCR9", "CCR10", "CCRL2", "CD74", "CH25H", "CHGA", "CKLF", "CLXN", "CMKLR1",
+                "CNR2", "CORO1A", "CORO1B", "CREB3", "CRK", "CRKL", "CSF1", "CSF1R", "CSF3R", "CTSG",
+                "CX3CL1", "CX3CR1", "CXADR", "CXCL1", "CXCL2", "CXCL3", "CXCL5", "CXCL9", "CXCL10", "CXCL11",
+                "CXCL12", "CXCL13", "CXCL14", "CXCL15", "CXCL16", "CXCL17", "CXCR1", "CXCR2", "CXCR3", "CXCR4",
+                "CXCR5", "CXCR6", "CYP7B1", "CYP19A1", "DAPK2", "DEFB3", "DEFB4", "DEFB5", "DEFB6", "DEFB7",
+                "DEFB8", "DEFB14", "DEFB25", "DEFB33", "DEFB46", "DEFB47", "DEFB48", "DNM1L", "DOCK4", "DPEP1",
+                "DPP4", "DUSP1", "DYSF", "EDN1", "EDN2", "EDN3", "EDNRA", "EDNRB", "EGR3", "ELMO2",
+                "ENG", "ENPP2", "EPHA2", "EPHB1", "F2RL1", "F7", "FCER1G", "FCGR3", "FFAR2", "FGF1",
+                "FGF2", "FGF4", "FGF16", "FGF18", "FGFR1", "FLT1", "GAB1", "GAS6", "GBF1", "GM5849",
+                "GM6040", "GPR15LG", "GPR18", "GPR35", "GPR183", "GPSM3", "GREM1", "GSTP1", "GSTP2", "HBEGF",
+                "HC", "HGF", "HMGB1", "HMGB2", "HOXB9", "HRG", "HSD3B7", "HSPB1", "IFNG", "IL1B",
+                "IL4", "IL12A", "IL16", "IL17B", "IL17RA", "IL17RC", "IL23A", "IL34", "ITGA1", "ITGA9",
+                "ITGAM", "ITGB2", "ITGB2L", "JAM3", "JAML", "KDR", "KIT", "LBP", "LEF1", "LGALS3",
+                "LGALS9", "LGMN", "LOX", "LPAR1", "LYN", "LYST", "MAPK1", "MAPK3", "MCU", "MDK",
+                "MET", "MIF", "MMP2", "MMP9", "MMP28", "MOSPD2", "MPP1", "MSMP", "MST1", "MSTN",
+                "MTUS1", "MYO9B", "NBL1", "NCKAP1L", "NEDD9", "NINJ1", "NOD2", "NOTCH1", "NOX1", "NR4A1",
+                "NRP1", "NUP85", "OXSR1", "P2RX4", "PADI2", "PARVA", "PDE4B", "PDE4D", "PDGFB", "PDGFD",
+                "PDGFRA", "PDGFRB", "PF4", "PGF", "PIKFYVE", "PIP5K1A", "PLA2G7", "PLEC", "PLEKHG5", "PLXNB3",
+                "PPBP", "PPIA", "PPIB", "PREX1", "PRKCA", "PRKCD", "PRKCQ", "PRKD1", "PRKD2", "PRSS56",
+                "PTK2", "PTK2B", "PTN", "PTPRJ", "PTPRO", "RAB13", "RAC1", "RAC2", "RAC3", "RARRES2",
+                "RETNLG", "RHOG", "RIN3", "RIPOR2", "RPL13A", "RPS19", "S1PR1", "S100A7L2", "S100A8", "S100A9",
+                "S100A14", "SAA3", "SBDS", "SCG2", "SELL", "SEMA5A", "SERPINE1", "SHH", "SLAMF1",
+                "SLAMF8", "SLAMF9", "SLC8B1", "SLC12A2", "SLC37A4", "SLIT2", "SMOC2", "SNAI2", "SPI1", "SPP1",
+                "STAP1", "STK39", "SWAP70", "SYK", "TAFA4", "THBS1", "THBS4", "TIAM1", "TIRAP", "TMEM102",
+                "TNFAIP6", "TNFSF11", "TNFSF14", "TNFSF18", "TPBG", "TREM1", "TREM3", "TRPM2", "TRPM4", "TRPV4",
+                "VAV1", "VAV3", "VCAM1", "VEGFA", "VEGFB", "VEGFC", "VEGFD", "WNK1", "WNT5A", "XCL1", "XCR1",
+                "ZFP580")
+
+Cycle <- c("AICDA", "ATAD5", "ATRX", "BRCA2", "CDC7","CDC45", "CDT1", "DACH1", "DBF4", "DNA2", 
+            "DONSON", "E2F7", "E2F8", "FBXO5", "FGFR1","GINS1", "GINS3", "ILKAP", "INO80", "LIG1", 
+            "MCM2", "MCM3", "MCM4", "MCM5", "MCM6","MCM7", "NUGGC", "PCNA", "POLA1", "RAD51", 
+            "RECQL5", "RNY1", "RNY3", "RTEL1", "RTF2","SENP2", "TK1", "UPF1", "WIZ", "ZFP830", 
+            "ZMPSTE24", "ZPR1")
+
+apoptosis <-c("4930486L24RIK", "ADCY10", "ADORA2A", "AGT", "AGTR2", "APAF1", "APP", "ATF3", "BAD", "BAX",
+  "BBC3", "BC051665", "BCAP31", "BCL2L11", "BCL2L14", "BCL10", "BCLAF1", "BECN1", "BID", "BMF",
+  "BMPR1B", "BMYC", "BOK", "BUB1", "CAMK2B", "CASP2", "CASP8", "CAV1", "CLU", "CRADD",
+  "CTNNA1", "CTS3", "CTS6", "CTS7", "CTS8", "CTSC", "CTSH", "CTSJ", "CTSK", "CTSL",
+  "CTSLL3", "CTSM", "CTSQ", "CTSR", "CTSS", "CYCT", "CYLD", "DAB2IP", "DAPK3", "DAXX",
+  "DDIT3", "DEDD2", "DNM1L", "EEF1E1", "EI24", "EIF2AK3", "FADD", "FAF1", "FAS",
+  "FBH1", "FBXW7", "FIS1", "FLCN", "G0S2", "GPER1", "GSDMA3", "GSDME", "HTRA2", "HYAL2",
+  "IFNB1", "IL19", "IL20RA", "INCA1", "ING5", "INHBA", "INHBB", "ITM2C", "JAK2", "JAK3",
+  "LCK", "LTB", "LTBR", "MAGED1", "MAL", "MAPK8", "MAPK9", "MCL1", "MMP2", "MSX1",
+  "MTCH2", "MYC", "NACC2", "NCK1", "NCK2", "NF1", "NFATC4", "NGFR", "NHERF1", "NKX3-1",
+  "NOX1", "NUPR1", "OSM", "PAK2", "PARK7", "PDCD7", "PDIA3", "PEA15A", "PIAS4", "PLAGL2",
+  "PLEKHF1", "PLSCR1", "PMAIP1", "PML", "PPP1CA", "PPP2R1A", "PPP2R1B", "PRKCD", "PRKRA", "PSEN2",
+  "PTEN", "PTPN2", "PTPRC", "PYCARD", "RACK1", "RAD9A", "RBCK1", "RET", "RIPK1", "RIPK3",
+  "RNF183", "RPL26", "RPS3", "RPS7", "RUNX3", "S100A8", "S100A9", "SEPTIN4", "SERINC3", "SFPQ",
+  "SFRP1", "SH3GLB1", "SIAH1A", "SIAH1B", "SIGLEC1", "SIRT1", "SKIL", "SOD1", "SPOP", "SRPX",
+  "STEAP3", "STK3", "STK4", "STYXL1", "TAF6", "TGFB2", "TGFBR1", "THBS1", "TLR4", "TLR6",
+  "TNF", "TNFRSF12A", "TNFSF10", "TPD52L1", "TRAF2", "TRAF7", "TRIM39", "TRP53", "TRP53INP1", "TRP63",
+  "TRP73", "TRPS1", "UBB", "UNC5B", "VNN1", "WNT5A", "WWOX", "ZSWIM2")
+# AddModuleScore------------------------
+library(ggpubr)
+DefaultAssay(HSC) <- "RNA"
+cd_features <- list(Stemness)
+HSC <- AddModuleScore(HSC,#可改为想进行的seurat对象
+                          features = cd_features,
+                          ctrl = 100,
+                          name = "Stemness")
+colnames(HSC@meta.data)
+colnames(HSC@meta.data)[23] <- 'LSC' 
+
+VlnPlot(HSC,features = 'LSC', 
+        pt.size = 0, adjust = 2,group.by = "Celltype",raster=FALSE)#Disease，seurat_clusters
+VlnPlot(Inscore,features = 'LSC', 
+        pt.size = 0, adjust = 2,group.by = "seurat_clusters")#Disease，seurat_clusters
+#计算每组均值
+Ery$data %>%
+  group_by(group) %>%
+  summarize(mean_Aging = mean(Aging))
+
+scores1 <- Inscore@meta.data$Aging[Inscore$seurat_clusters== '1']#Acute 
+scores2 <- Inscore@meta.data$Aging[Inscore$seurat_clusters== '2']#Chronic
+scores3 <- Inscore@meta.data$Aging[Inscore$seurat_clusters== '3']#Healthy
+scores0 <- Inscore@meta.data$Aging[Inscore$seurat_clusters== '0']
+t.test(scores1,scores2)
+t.test(scores1,scores3)
+t.test(scores1,scores0)
+t.test(scores3,scores2)
+t.test(scores0,scores2)
+t.test(scores0,scores3)
+
+VlnPlot(Inscore,features = 'Aging', 
+        pt.size = 0, adjust = 2,group.by = "Disease")#Disease，seurat_clusters
+scores4 <- Inscore@meta.data$Aging[Inscore$Disease== 'Acute']# 
+scores5 <- Inscore@meta.data$Aging[Inscore$Disease== 'Chronic']#
+scores6 <- Inscore@meta.data$Aging[Inscore$Disease== 'Healthy']#
+
+t.test(scores4,scores5)
+t.test(scores4,scores6)
+t.test(scores5,scores6)
+
+#绘制箱线图
+# 创建小提琴图+箱线图
+Palette <- c("#E41A1C","#377EB8","#984EA3","#4DAF4A")
+#my_comparisons <- list( c("1", "2"),c("1", "3"),c("1", "4"), c("2", "3"),c("2", "4"), c("3", "4"))
+#my_comparisons <- list(c("CR_malignant", "CR_normal"),c("CR_malignant", "NR_malignant"),
+                      #c("CR_malignant", "NR_normal"),c("CR_normal", "NR_malignant"),
+                       #c("CR_normal", "NR_normal"),c("NR_malignant", "NR_normal"))
+my_comparisons <- list(c("Pre-Bite", "Post-Bite"))
+plot_data <- data.frame(group = Inscore$condition, Aging = Inscore$BCL11B)
+ggplot(plot_data, aes(x = group, y = Aging, color = group, fill = group)) +
+  geom_violin(position = position_dodge(width = 1), scale = 'width', color = "black") +
+  geom_boxplot(position = position_dodge(width = 1), outlier.size = 0.7, width = 0.1, show.legend = FALSE, color = "black") +
+  theme(panel.grid = element_blank(), panel.background = element_blank(), panel.border = element_blank(),
+        axis.line = element_line(color = "black"),
+        legend.title = element_blank(), legend.key = element_blank(),
+        axis.text.x = element_text(size = 12),  # 设置x轴字体大小为12
+        axis.text.y = element_text(size = 12),# 设置y轴字体大小为12
+        plot.title = element_text(hjust = 0.5)) +  # 设置标题居中
+  labs(x = '', y = '', title = 'BCL11B')+ 
+  stat_compare_means(comparisons = my_comparisons,label = "p.signif",tip.length=0)
+#scale_fill_manual(values = Palette) +
+
+
+bPalette <- c("#E41A1C","#A5BF05","#38BFEE","#D664F4")#('#984EA3','#9D8430','#336666','#21D87C',)
+#my_comparisons1 <- list( c('CR', 'HC'),c('HC', 'NR'),c('CR','NR'))
+my_comparisons1 <- list( c("HSC/MPP1", "HSC/MPP2"), c("HSC/MPP2", "HSC/MPP3"),c("HSC/MPP3", "HSC/MPP4"),
+                         c("HSC/MPP1", "HSC/MPP3"),c("HSC/MPP2", "HSC/MPP4"),
+                         c("HSC/MPP1", "HSC/MPP4"))
+plot_data1 <- data.frame(group = HSC$Celltype, Aging = HSC$LSC)
+ggplot(plot_data1, aes(x = group, y = Aging, color = group, fill = group)) +
+  geom_violin(position = position_dodge(width = 1), scale = 'width', color = "black") +
+  scale_fill_manual(values = bPalette) +
+  geom_boxplot(position = position_dodge(width = 1), outlier.size = 0.7, width = 0.1, show.legend = FALSE, color = "black") +
+  theme(panel.grid = element_blank(), panel.background = element_blank(), panel.border = element_blank(),
+        axis.line = element_line(color = "black"),
+        legend.title = element_blank(), legend.key = element_blank(),
+        axis.text.x = element_text(size = 12,angle = 90),  # 设置x轴字体大小为12
+        axis.text.y = element_text(size = 12),# 设置y轴字体大小为12
+        plot.title = element_text(hjust = 0.5)) +  # 设置标题居中
+  labs(x = '', y = '', title = 'Stemness score')+ 
+  stat_compare_means(comparisons = my_comparisons1,label = "p.signif",tip.length=0)
+
+"#E41A1C" "#377EB8" "#4DAF4A" "#984EA3" "#FF7F00" "#FFFF33" "#A65628" "#F781BF" "#999999"
+"#6699CC",'#FF9933','#CC3333'
+
+Palette <- c("#993333", "#D55E00", "#009E73","#E41A1C","#377EB8","#4DAF4A","#984EA3",
+             '#DC3E1B','#008000',"#56B4E9","#CC79A7","#0072B2",  "#F0E442", "#999999",
+             '#0000FF', "#0072B2", "#D55E00")
+
+
+bPalette <- c("#993333", "#D55E00", "#009E73","#E41A1C","#377EB8","#4DAF4A","#984EA3",'#DC3E1B','#008000',"#56B4E9","#CC79A7","#0072B2",  "#F0E442", "#999999",'#0000FF', "#0072B2", "#D55E00")
+my_comparisons1 <- list( c('Acute', 'Chronic'),c('Chronic', 'Healthy'),c('Acute','Healthy'))
+plot_data1 <- data.frame(group = Inscore$Disease, Aging = Inscore$Aging)
+ggplot(plot_data1, aes(x = group, y = Aging, color = group, fill = group)) +
+  geom_violin(position = position_dodge(width = 1), scale = 'width', color = "black") +
+  scale_fill_manual(values = bPalette) +
+  geom_boxplot(position = position_dodge(width = 1), outlier.size = 0.7, width = 0.1, show.legend = FALSE, color = "black") +
+  theme(panel.grid = element_blank(), panel.background = element_blank(), panel.border = element_blank(),
+        axis.line = element_line(color = "black"),
+        legend.title = element_blank(), legend.key = element_blank(),
+        axis.text.x = element_text(size = 12),  # 设置x轴字体大小为12
+        axis.text.y = element_text(size = 12),# 设置y轴字体大小为12
+        plot.title = element_text(hjust = 0.5)) +  # 设置标题居中
+  labs(x = '', y = '', title = 'Senescence Score')+ 
+  stat_compare_means(comparisons = my_comparisons1,label = "p.signif",tip.length=0)
+
+ggsci::pal_npg()(8)
+[1] "#E64B35FF" "#4DBBD5FF" "#00A087FF" "#3C5488FF" "#F39B7FFF" "#8491B4FF" "#91D1C2FF"
+[8] "#DC0000FF"
+
+
+# 静止活动数据------------------------
+QAdata=read.csv("Activated_VS_QuiescentLTHSC.csv",header = T)
+
+QAdataupdown<-subset(QAdata,abs(logFC)>2 &abs(FDR)<0.01&genename!="None")
+
+QAdataup<-subset(QAdata,logFC>2 &abs(FDR)<0.05 &genename!="None")
+
+QAdatadown<-subset(expr,logFC<as.numeric(-2) &abs(FDR)<0.05&genename!="None")
+QAdataupdown$type<-ifelse(QAdataupdown$logFC<0,"AvsQ_Down","AvsQ_UP")
+
+library(GSVA)
+genesets2_AQ<-split(QAdataupdown$genename, QAdataupdown$type)
+#构建矩阵，单细胞
+Idents(HSC) <- 'Celltype'
+expr <- AverageExpression(HSC, assays = "RNA", slot = "data")[[1]]
+expr <- expr[rowSums(expr)>0,]  #过滤细胞表达量全为零的基因
+expr <- as.matrix(expr)
+head(expr)
+#bulk 构建矩阵用FPKM
+colnames(DEG)
+expr <- DEG[,c("M13_NC-RNA_1_fpkm","M13_NC-RNA_2_fpkm",  
+               "M13_NC-RNA_3_fpkm","M13_sh2-RNA_1_fpkm" ,
+               "M13_sh2-RNA_2_fpkm","M13_sh2-RNA_3_fpkm")]
+colnames(expr) <- c('CON1','CON2','CON3','ENO1_KO1','ENO1_KO2','ENO1_KO3')
+expr <- as.matrix(expr)
+
+gsva.res_AQ<- gsva(expr, genesets2_AQ, method="ssgsea") 
+
+gsva.res_AQt<-t(gsva.res_AQ) %>% as.data.frame()
+rownames_to_column(gsva.res_AQt)->gsva.res_AQt
+
+ggplot(gsva.res_AQt)+geom_point(aes(x=AvsQ_UP,y=AvsQ_Down,color=rowname),size=3)+
+  scale_color_manual(values = c("#D35400","#E67E22","#E59866","#82E0AA","#2ECC71","#28B463"))+
+  labs(x = "LT-HSC activate score", y = "LT-HSC quite score") +
+  theme_minimal() +
+  theme(
+    panel.background = element_blank(),  # 移除背景颜色
+    panel.grid.major = element_blank(),  # 移除主要网格线
+    panel.grid.minor = element_blank(),  # 移除次要网格线
+    axis.line = element_line(colour = "black"),# 添加x和y轴
+    axis.ticks = element_line(colour = "black") # 添加刻度线
+  )+guides(color = guide_legend(title = NULL))

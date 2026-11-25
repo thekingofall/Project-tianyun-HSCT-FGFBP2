@@ -1,0 +1,1240 @@
+---
+title: "HSCT"
+output: html_document
+date: "2024-06-18"
+---
+```{r}
+library(dplyr)    
+library(Seurat)    
+library(patchwork)
+library(tidyverse)
+library(ggplot2)
+library(Matrix)
+library(SingleR)
+library(dplyr)
+library(patchwork)
+library(tibble)
+library(pheatmap)
+library(DoubletFinder)
+library(SingleCellExperiment)
+library(cluster)
+library(reshape2)
+library(harmony)
+```
+
+```{r}
+scRNA <- merge(YZ6,y=c(GZ6,YZ6A,YZ6C,YZ6D,
+                       GZ7,YZ7,YZ7A,YZ7C,YZ7D,
+                       GZ5,YZ5,YZ5A,YZ5C,YZ5D,
+                       GZ8,YZ8,YZ8A,YZ8C,YZ8D,
+                       GZ9,YZ9,YZ9A))
+```
+
+#Hrmony降维聚类
+```{r}
+# 降维&整合------------------------
+DefaultAssay(scRNA) <- 'RNA'
+scRNA <- NormalizeData(scRNA) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+scRNA <- RunPCA(scRNA, verbose = F)
+scRNA <- RunHarmony(scRNA,group.by.vars = "orig.ident")
+scRNA <- scRNA %>% RunUMAP(dims=1:20,reduction = "harmony")
+scRNA <- FindNeighbors(scRNA, dims=1:20,reduction = "harmony")
+```
+```{r}
+scRNA <- FindClusters(scRNA,resolution = 1.0)
+scRNA.markers <- FindAllMarkers(scRNA, only.pos = TRUE, min.pct = 0.25, logfc.threshscRNA = 0.25)
+write.csv(scRNA.markers,file = "scRNA.markers.csv")
+saveRDS(scRNA, file = "./scRNA.rds")
+#DimPlot(scRNA,raster = F,label = T,group.by = 'Celltype')#,group.by = 'Celltype'
+```
+
+```{r}
+getwd()
+scRNA$Celltype <- factor(scRNA$Celltype, levels = c("T","NK","B","Monocytes","Granulocytes",'cDC','pDC',
+                                                    'Erythrocytes','Platelets'))
+saveRDS(scRNA,'scRNA.rds')
+#更改名称
+scRNA$condition1[scRNA$condition1 == "HC"] <- "HD"
+#命名
+cluster_names <- c("0" = "Monocytes","1" = "T","2" = "Granulocytes","3" = "T","4" = "T",
+                   "5" = "T","6" = "NK", "7" = "Granulocytes","8" = "T","9" = "Granulocytes",
+                   "10" = "Monocytes","11" =  "Monocytes","12" = "T","13" = "Granulocytes",
+                   "14" = "Monocytes","15" = "T","16" = "B","17" = "Platelets",
+                   "18" =  "Monocytes","19" =  "T","20" ="T","21" = "NK",
+                   "22" = "Erythrocytes","23" =  "T","24" = "Granulocytes",
+                   "25" = "Monocytes","26" = "cDC","27" = "Monocytes","28" = "Granulocytes",
+                   "29" = "T","30" = "B","31" = "Erythrocytes","32" = "Monocytes",
+                   "33" = "Monocytes","34" = "pDC","35" = "Granulocytes","36" = "B",
+                   "37" = "HSCs","38" = "Erythrocytes","39" = "Monocytes","40" = "Granulocytes")
+scRNA$Celltype <- cluster_names[scRNA$seurat_clusters]
+scRNA$Celltype <- factor(scRNA$Celltype, levels = c("HSCs","T","NK","B","Monocytes","Granulocytes",'cDC','pDC','Erythrocytes','Platelets'))
+ scRNA$orig.ident <- factor(scRNA$orig.ident, levels = c("GZ5", "YZ5", "YZ5A", "YZ5C", "YZ5D", "GZ6","YZ6", "YZ6A", "YZ6C","YZ6D","GZ7","YZ7", "YZ7A", "YZ7C", "YZ7D","GZ8","YZ8", "YZ8A", "YZ8C", "YZ8D","GZ9", "YZ9", "YZ9A"), ordered = TRUE)
+scRNA$condition <- factor(scRNA$condition, levels = c("HD","Pre","Post-1M","Post-3M","Post-6M"))
+```
+
+##绘图
+```{r}
+#Umap
+DimPlot(scRNA,raster = F,label = T,group.by = 'Celltype',cols = c("#49B2BE",'#699ECA','#0098E2','#FF8C00','#D97DAA','#C07DD9',"#DE3163","#FFBF00","#FB5039","#8582BD"))#'#F898CB' '#C07DD9','#D9877D'
+
+DimPlot(scRNA,raster = F,label = T,group.by = 'Celltype',cols = c("#49B2BE",'#699ECA','#0098E2','#FF8C00','#D97DAA','#C07DD9',"#DE3163","#FFBF00","#FB5039","#8582BD"),split.by = 'condition')
+
+DotPlot(scRNA,features = c("CD34","SPINK2","PROM1",
+                           "CD3E","CD3D","CD3G",
+                           "GNLY", "NKG7", "CX3CR1",
+                           'CD79A','CD19','MS4A1',
+                           "CD14","VCAN","LYZ",
+                           "FCGR3B","CMTM2","S100A8",
+                           "CD1C","FCER1A","ENHO",
+                           'IL3RA','CLEC4C','JCHAIN',
+                           "HBB","HBG2",'HBA2',
+                          "PPBP", "PF4", "GP9"),group.by = 'Celltype')+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+#面积堆积总体
+mycolor<-c("#49B2BE",'#699ECA','#0098E2','#FF8C00','#D97DAA','#C07DD9',"#DE3163","#FFBF00","#FB5039","#8582BD") 
+t <- prop.table(table(scRNA$Celltype, scRNA$condition), margin = 2)
+p <- as.data.frame(t)
+#p <- p[!p$Var1 %in% c("Erythrocytes", "Platelets"), ]
+p$x <- rep(c(1:5), each=10)
+#p$Var1 <- factor(p$Var1, levels = 1:22)
+ggplot(p, aes(x, Freq, fill = Var1)) +
+  geom_area(size = 0.5, colour = "white") +
+  scale_fill_manual(name = "Cluster", values = mycolor) +
+  scale_x_continuous(breaks = 1:5, labels = c('HD','Pre','1M','3M','6M')) +
+  theme_bw() +
+  theme(panel.border = element_rect(size = 1),
+        axis.text.x = element_text(size = 10),# 调整x轴文本大小为12,angle = 90,hjust = 0.5,vjust = 0.5
+        axis.title.x = element_blank(),  # 去掉x轴标题
+        axis.title.y = element_text(size = 12),  # 调整y轴标题字体大小为14
+        axis.text.y = element_text(size = 10)) +  # 调整y轴文本字体大小为12
+  labs(y = "Proportion (%)") +
+  guides(fill = guide_legend(ncol = 1))
+```
+```{r}
+#每种细胞类型组成
+mycolor <- c('#7030a0','#0070c0','#ff5050','#f78832','#70ad47')
+t <- as.matrix(prop.table(table(scRNA$condition, scRNA$Celltype), margin = 2)*100) 
+p <- as.data.frame(t)
+p$x <- rep(1:10, each=5)
+colnames(p) <-c("cluster","Disease","proportion","x")
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 90,hjust = 1.0,vjust = 0.5))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_fill_manual(values =mycolor)+
+  ylab("Proportion(%)")
+```
+
+```{r}
+mycolor<-c("#49B2BE",'#699ECA','#0098E2','#FF8C00','#D97DAA','#C07DD9',"#DE3163","#FFBF00","#FB5039","#8582BD") 
+#面积堆积个体
+t <- as.matrix(prop.table(table(scRNA$Celltype, scRNA$orig.ident), margin = 2)*100) 
+p <- as.data.frame(t)
+#p <- p[!p$Var1 %in% c("Erythrocytes", "Platelets"), ]
+p$x <- rep(1:23, each=10)
+#t <- as.matrix(prop.table(table(CN$Celltype, CN$condition), margin = 2)*100) 
+#p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion","x")
+p$Disease <- factor(p$Disease, levels = c("GZ5","GZ6","GZ7","GZ8","GZ9","YZ5","YZ6","YZ7","YZ8","YZ9",
+  "YZ5A","YZ6A","YZ7A","YZ8A","YZ9A",
+  "YZ5C","YZ6C","YZ7C","YZ8C",
+  "YZ5D","YZ6D","YZ7D","YZ8D"))
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 90,hjust = 0.5,vjust = 0.5))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_fill_manual(values =mycolor)+
+  ylab("Proportion(%)")
+```
+##调整
+```{r}
+#更改某一群
+#scRNA@meta.data$Celltype <- as.character(scRNA@meta.data$Celltype)
+common_columns <- which(rownames(scRNA@meta.data) %in% rownames(R8TCR@meta.data))
+scRNA@meta.data$Celltype[common_columns] <- 'T'
+#去除level影响
+CD8$Celltype <- droplevels(CD8$Celltype)
+```
+
+```{r}
+scRNA$condition <- ''
+scRNA$condition[scRNA$orig.ident %in% c("GZ5", "GZ6", "GZ7", "GZ8", "GZ9")] <- "HD"
+scRNA$condition[scRNA$orig.ident %in% c("YZ5", "YZ6", "YZ7", "YZ8", "YZ9")] <- "Pre"
+scRNA$condition[scRNA$orig.ident %in% c("YZ5A", "YZ6A", "YZ7A", "YZ8A", "YZ9A")] <- "Post-1M"
+scRNA$condition[scRNA$orig.ident %in% c("YZ5C", "YZ6C", "YZ7C", "YZ8C")] <- "Post-3M"
+scRNA$condition[scRNA$orig.ident %in% c("YZ5D", "YZ6D", "YZ7D", "YZ8D")] <- "Post-6M"
+```
+
+#CCA整合
+```{r}
+#CCA整合
+sample.list <- list(GZ5,YZ5,YZ5A,YZ5C,YZ5D, 
+                    GZ6,YZ6,YZ6A,YZ6C,YZ6D,
+                    GZ7,YZ7,YZ7A,YZ7C,YZ7D,
+                    GZ8,YZ8,YZ8A,YZ8C,YZ8D,
+                    GZ9,YZ9,YZ9A)
+#normalize and identify variable features for each dataset independently
+sample.list <- lapply(X = sample.list, FUN = function(x) {
+  x <- NormalizeData(x)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+})
+setwd('../Integration/')
+system.time(saveRDS(sample.list, file = "sample.list.rds"))
+#锚点整合 select features that are repeatedly variable across datasets for integration
+features <- SelectIntegrationFeatures(object.list = sample.list)
+
+sample.anchors <- FindIntegrationAnchors(object.list = sample.list, anchor.features = features)
+
+sample.combined <- IntegrateData(anchorset = sample.anchors)
+
+DefaultAssay(sample.combined) <- "integrated"
+
+# Run the standard workflow for visualization and clustering
+sample.combined <- ScaleData(sample.combined, verbose = FALSE)
+sample.combined <- RunPCA(sample.combined, npcs = 20, verbose = FALSE)
+saveRDS(sample.combined, file = "./sample.combined.rds")
+
+sample.combined <- RunUMAP(sample.combined, reduction = "pca", dims = pc.num)
+sample.combined <- FindNeighbors(sample.combined, reduction = "pca", dims = pc.num)
+
+scRNA <- FindClusters(sample.combined, resolution = c(seq(.1,2,.1)))
+clustree(scRNA@meta.data, prefix = "RNA_snn_res.")
+scRNA <- FindClusters(scRNA,resolution = 1.0)
+DimPlot(scRNA,label = T,raster = F)
+saveRDS(sample.combined, file = "./sample.combined.rds")
+scRNA <- FindClusters(scRNA,resolution = 1.0)
+scRNA.markers <- FindAllMarkers(scRNA, only.pos = TRUE, min.pct = 0.25, logfc.threshscRNA = 0.25)
+write.csv(scRNA.markers,file = "scRNA.markers.csv")
+saveRDS(scRNA, file = "./scRNA.rds")
+DimPlot(scRNA,label = T,raster = F)
+scRNA$condition <- factor(scRNA$condition, levels = c("Donor","Pre HSCT","Post HSCT"))
+```
+
+#TCR
+```{r}
+GZ5 <- read.csv("/data5/tiany/HSCT/runs/CellRanger/GZ0005/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+GZ6 <- read.csv("/data5/tiany/HSCT/runs/GZ0006/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+GZ7 <- read.csv("/data5/tiany/HSCT/runs/GZ0007/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+GZ8 <- read.csv("/data5/tiany/HSCT/runs/GZ0008/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+GZ9 <- read.csv("/data5/tiany/HSCT/runs/CellRanger/GZ0009/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+
+YZ5 <- read.csv("/data5/tiany/HSCT/runs/YZ0005/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ5A <- read.csv("/data5/tiany/HSCT/runs/CellRanger/YZ0005a/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ5C <- read.csv("/data5/tiany/HSCT/runs/CellRanger/YZ5C/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ5D <- read.csv("/data5/tiany/HSCT/runs/CellRanger/Y25D/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+
+YZ6 <- read.csv("/data5/tiany/HSCT/runs/YZ0006/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ6A <- read.csv("/data5/tiany/HSCT/runs/YZ0006a/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ6C <- read.csv("/data5/tiany/HSCT/runs/YZ0006c/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ6D <- read.csv("/data5/tiany/HSCT/runs/CellRanger/YZ0006d/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+
+YZ7 <- read.csv("/data5/tiany/HSCT/runs/YZ0007/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ7A <- read.csv("/data5/tiany/HSCT/runs/YZ0007a/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ7C <- read.csv("/data5/tiany/HSCT/runs/CellRanger/YZ0007C/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ7D <- read.csv("/data5/tiany/HSCT/runs/CellRanger/YZ0007D/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+
+YZ8 <- read.csv("/data5/tiany/HSCT/runs/YZ0008/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ8A <- read.csv("/data5/tiany/HSCT/runs/CellRanger/YZ0008a/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ8C <- read.csv("/data5/tiany/HSCT/runs/CellRanger/YZ0008c/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ8D <- read.csv("/data5/tiany/HSCT/runs/CellRanger/Y29D/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+
+YZ9 <- read.csv("/data5/tiany/HSCT/runs/CellRanger/YZ0009/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+YZ9A <- read.csv("/data5/tiany/HSCT/runs/CellRanger/YZ0009a/outs/multi/vdj_t/all_contig_annotations.csv",stringsAsFactors = F)
+```
+
+##整合
+```{r}
+library(scRepertoire)
+library(Seurat)
+library(ggsci)
+contig_list <- list(GZ5, GZ6, GZ7, GZ8, GZ9,
+                    YZ5, YZ5A, YZ5C, YZ5D,
+                    YZ6, YZ6A, YZ6C, YZ6D,
+                    YZ7, YZ7A, YZ7C, YZ7D,
+                    YZ8, YZ8A, YZ8C, YZ8D,
+                    YZ9, YZ9A)#
+combined <- combineTCR(contig_list, samples = c("GZ5", "GZ6", "GZ7", "GZ8", "GZ9",
+                                                "YZ5", "YZ5A", "YZ5C", "YZ5D",
+                                                "YZ6", "YZ6A", "YZ6C", "YZ6D", 
+                                                "YZ7", "YZ7A", "YZ7C", "YZ7D", 
+                                                "YZ8", "YZ8A", "YZ8C", "YZ8D",
+                                                "YZ9", "YZ9A"),cells ="T-AB")#
+
+combined <- addVariable(combined, name = "ID", variables = c(
+  "Donor","Donor","Donor","Donor","Donor",
+"Pre HSCT","Post HSCT","Post HSCT","Post HSCT",
+"Pre HSCT","Post HSCT","Post HSCT","Post HSCT",
+"Pre HSCT","Post HSCT","Post HSCT","Post HSCT",
+"Pre HSCT","Post HSCT","Post HSCT","Post HSCT",
+"Pre HSCT","Post HSCT"))
+```
+
+```{r}
+Tsubset$TCR_status <- ifelse(colnames(Tsubset) %in% coTCR$barcode, "TCRhave", "TCRno")
+```
+
+```{r}
+scRNA <- combineExpression(combined, scRNA, 
+                            cloneCall="gene", 
+                            # group.by = "Sample", 
+                            proportion = FALSE, 
+                            cloneTypes=c(Single=1, Small=5, Medium=20, Large=100, Hyperexpanded=10000))
+
+Tcell <- combineExpression(combined, Tcell, 
+                            cloneCall="gene", 
+                            proportion = FALSE, 
+                            cloneTypes=c(Single=1, Small=5, Medium=20, Large=100, Hyperexpanded=10000))
+
+Tcell$TCR <- ifelse(Tcell$cloneType %in% c("Hyperexpanded (100 < X <= 10000)", 
+                                          "Large (20 < X <= 100)", 
+                                          "Medium (5 < X <= 20)", 
+                                          "Single (0 < X <= 1)",'Small (1 < X <= 5)'), "TCR+", "TCR-")
+
+Tcell$cloneType <- factor(Tcell$cloneType, levels = c("Hyperexpanded (100 < X <= 10000)","Large (20 < X <= 100)",'Medium (5 < X <= 20)','Small (1 < X <= 5)','Single (0 < X <= 1)'), ordered = TRUE)
+Tcell$TCR <- factor(Tcell$TCR, levels = c("TCR+","TCR-"), ordered = TRUE)
+DimPlot(Tcell,group.by = 'TCR',raster = F,cols =c('blue','grey'))
+```
+
+
+```{r}
+Tcell <- scRNA[,scRNA@meta.data$Celltype %in% c('T')]
+```
+
+##共享
+```{r}
+HD <- Tcell1[,Tcell1@meta.data$condition %in% c('HD')]
+Pre <- Tcell1[,Tcell1@meta.data$condition %in% c('Pre')]
+M1 <- Tcell1[,Tcell1@meta.data$condition %in% c('Post-1M')]
+M3 <- Tcell1[,Tcell1@meta.data$condition %in% c('Post-3M')]
+M6 <- Tcell1[,Tcell1@meta.data$condition %in% c('Post-6M')]
+#TCR克隆共享
+combined2 <- expression2List(bothhd1,split.by = "Celltype")
+clonalOverlap(combined2, 
+             cloneCall="aa", method="raw"#overlap raw
+             )+ scale_fill_gradient(low = "#0269DD", high = "#F43A3A", na.value = "white")+theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5))+ggtitle("Single")+
+theme(plot.title = element_text(hjust = 0.5))
+```
+
+##高度克隆扩增
+```{r}
+Tcell$Tcb <- Tcell$CTaa
+Tcell$Tcb <- sub(".*_", "", Tcell$Tcb)
+hyper <- Tcell[,Tcell@meta.data$cloneType %in% c('Hyperexpanded (100 < X <= 10000)')]
+table(hyper$CTb)
+Tcell$Tcb1 <- Tcell$Tcb
+#高度克隆扩增的
+Tcell$Tcb[!(Tcell$Tcb %in% c("CASSEGPQRDEKLFF", "CASSNSQGTQPQHF",'CSVVRGTVEYEQYF','CASSFDSEGPHRGTQYF'))] <- "Other"
+
+DimPlot(Tcell,group.by = 'Tcb',cols = c('#F43A3A','#F4A73A','#8ACB03','#03CBB0','#F9F8F6'))
+hyper$Tcb[!(hyper$Tcb %in% c("CASSEGPQRDEKLFF", "CASSNSQGTQPQHF",'CSVVRGTVEYEQYF','CASSFDSEGPHRGTQYF'))] <- "Other"
+hyper$Tcb <- factor(hyper$Tcb, levels = c("CASSNSQGTQPQHF", "CASSEGPQRDEKLFF", "CSVVRGTVEYEQYF", "CASSFDSEGPHRGTQYF"))
+
+```
+#T细胞
+```{r}
+#Tcell <- scRNA[,scRNA@meta.data$Celltype %in% c('T')]
+#T细胞过滤
+#test <- Tcell[c('CD3D','CD3E','CD3G','CD247'),]   
+#test <- rbind(test@assays$RNA@data,colMeans(test@assays$RNA@data))  
+#rownames(test)[5] <- 'mean'  
+#test3 <- test[,test["mean",]>0.5]
+#test <- unique(c(colnames(test3),colnames(YZ9A)))
+#Tcell.filter <- Tcell[,test]
+#Tcell <- Tcell.filter 
+Tcell <- Tcell[!grepl("^HBB|^HBA|^MT-|^RPS|^RPL|^MTRNR|^S100A", rownames(Tcell)), ]
+Tcell <- NormalizeData(Tcell) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+Tcell <- RunPCA(Tcell, verbose = F)
+Tcell <- RunHarmony(Tcell,group.by.vars = "orig.ident")
+ElbowPlot(Tcell, ndims = 50)
+pct <- Tcell[["pca"]]@stdev / sum(Tcell[["pca"]]@stdev) * 100
+cumu <- cumsum(pct)
+co1 <- which(cumu > 90 & pct < 5)[1]
+co1
+co2 <- sort(which((pct[1:length(pct) - 1] - pct[2:length(pct)]) > 0.1), decreasing = T)[1] + 1
+co2
+pcs <- min(co1, co2)
+pcs
+plot_df <- data.frame(pct = pct,
+                      cumu = cumu,
+                      rank = 1:length(pct))
+ggplot(plot_df, aes(cumu, pct, label = rank, color = rank > pcs)) +
+  geom_text() +
+  geom_vline(xintercept = 90, color = "grey") +
+  geom_hline(yintercept = min(pct[pct > 5]), color = "grey") +
+  theme_bw()
+rm(pct,co1,co2,pcs,plot_df,cumu)
+```
+
+```{r}
+Tcell <- Tcell %>% RunUMAP(dims=1:17,reduction = "harmony")
+Tcell <- FindNeighbors(Tcell, dims=1:17,reduction = "harmony")
+DimPlot(Tcell,raster = F,label = T)#group.by = 'Celltype'
+
+Tcell1 <- FindClusters(Tcell, resolution = c(seq(.5,2,.1)))
+clustree(Tcell1@meta.data, prefix = "RNA_snn_res.")
+Tcell <- FindClusters(Tcell,resolution = 1.3)
+DimPlot(Tcell,label = T)
+
+Tmarkers <- FindAllMarkers(Tcell, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(Tmarkers,file = "Tmarkers(23例).csv")
+saveRDS(Tcell,'Tcell118.rds')
+T16.marker <- FindMarkers(Tcell,ident.1=c("16"),
+                              ident.2=c("0","2","3","8"),
+                              logfc.threshold= 0.25,min.pct = 0.25)#为负表示ident2上调
+write.csv(T16.marker,file = "T16.marker.csv")
+#T细胞命名
+cluster_names <- c("0" = "CD8 Teff","1" = "CD4 Naive","2" = "CD4 Teff", "3" = "CD8 Tem","4" ="MAIT",
+                   "5" ="CD4 Tscm","6" =  "CD8 Naive","7" ="CD4 Tem","8" ="CD4 Tcm",
+                   "9" = "γδT","10" = "CD4 Naive","11" = "CD4 Teff",
+                   "12" = "CD8 Tem","13" = "CD8 Teff","14" = "CD4 Treg","15" = "CD8 Teff",
+                   "16" = "CD8 Tem","17" = "CD8 Teff","18" = "CD8 Trm","19" = "CD8 Tex",
+                   "20" = "CD8 Trm","21" = "CD8 Trm","22" =  "CD8 Naive","23" ="MAIT","24" = "CD4 Teff")
+Tcell$Celltype <- cluster_names[Tcell$seurat_clusters]
+Tcell$Celltype <- factor(Tcell$Celltype, levels = c("CD4 Naive",'CD4 Tscm',"CD4 Tcm","CD4 Tem","CD4 Teff", "CD4 Treg","CD8 Naive", "CD8 Tcm","CD8 Tem", "CD8 Teff", "CD8 Tex", "Trm-like",'NKT',"MAIT","γδT"), ordered = TRUE)
+cluster_names <- c("CD4 Naive"="1", "CD4 Tcm"="2","CD4 Teff"="3", "CD4 Tem" ="4","CD4 Treg"="5","CD4 Tscm"="6","CD8 Naive"= "7","CD8 Tcm"="8","CD8 Teff"='9', "CD8 Tem"='10', "CD8 Tex"='11', "MAIT"='12', "NKT"='13', "Trm-like"='14', "γδT"='15')
+Tcell$Celltype1 <- factor(Tcell$Celltype1, levels = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"), ordered = TRUE)
+Tcell$Celltype1 <- cluster_names[Tcell$Celltype]
+#去除levels的影响
+Tcell1$Celltype=factor(Tcell1$Celltype,level=unique(Tcell1$Celltype))
+# 根据细胞群分类设置不同的条件
+Tcell1$condition2[which(Tcell1$orig.ident %in% c("GZ5", "GZ6", "GZ7", "GZ8", "GZ9"))] <- "HD"
+Tcell1$condition2[which(Tcell1$orig.ident %in% c("YZ6", "YZ7", "YZ8", "YZ9", "YZ5"))] <- "Pre"
+Tcell1$condition2[which(Tcell1$orig.ident %in% c("YZ6A", "YZ7A", "YZ8A", "YZ9A", "YZ5A"))] <- "1M"
+Tcell1$condition2[which(Tcell1$orig.ident %in% c("YZ6C", "YZ7C", "YZ8C", "YZ5C"))] <- "3M"
+Tcell1$condition2[which(Tcell1$orig.ident %in% c("YZ6D", "YZ7D", "YZ8D", "YZ5D"))] <- "6M"
+
+Tcell1$Celltype2 <- paste(Tcell1$condition2, Tcell1$Celltype, sep = "_")
+Tcell1$Celltype2 <- factor(Tcell1$Celltype2, levels = c("Pre_CD4 Naive","HD_CD4 Naive", "1M_CD4 Naive","3M_CD4 Naive","6M_CD4 Naive",
+"Pre_CD4 Tcm", "HD_CD4 Tcm", "1M_CD4 Tcm","3M_CD4 Tcm","6M_CD4 Tcm",
+"Pre_CD4 Teff1", "HD_CD4 Teff1", "1M_CD4 Teff1", "3M_CD4 Teff1","6M_CD4 Teff1",
+"Pre_CD4 Teff2","HD_CD4 Teff2", "1M_CD4 Teff2","3M_CD4 Teff2","6M_CD4 Teff2",
+"Pre_CD4 Tem", "HD_CD4 Tem", "1M_CD4 Tem", "3M_CD4 Tem","6M_CD4 Tem",
+"Pre_CD4 Treg", "HD_CD4 Treg","1M_CD4 Treg","3M_CD4 Treg","6M_CD4 Treg",
+ "Pre_CD8 Naive","HD_CD8 Naive", "1M_CD8 Naive","3M_CD8 Naive","6M_CD8 Naive",
+"Pre_CD8 Teff1", "HD_CD8 Teff1", "1M_CD8 Teff1", "3M_CD8 Teff1", "6M_CD8 Teff1",
+ "Pre_CD8 Teff2", "HD_CD8 Teff2", "1M_CD8 Teff2", "3M_CD8 Teff2","6M_CD8 Teff2",
+"Pre_CD8 Tem1", "HD_CD8 Tem1", "1M_CD8 Tem1", "3M_CD8 Tem1", "6M_CD8 Tem1",
+"Pre_CD8 Tem2", "HD_CD8 Tem2","1M_CD8 Tem2", "3M_CD8 Tem2","6M_CD8 Tem2",
+"Pre_CD8 Tex", "HD_CD8 Tex", "1M_CD8 Tex","3M_CD8 Tex","6M_CD8 Tex",
+"Pre_CD8 Trm","HD_CD8 Trm", "1M_CD8 Trm","3M_CD8 Trm","6M_CD8 Trm"))
+```
+
+##T细胞绘图
+```{r}
+CD4T <- Tcell[,Tcell@meta.data$Celltype %in% c("CD4 Naive",'CD4 Tscm',"CD4 Tcm","CD4 Tem","CD4 Teff", "CD4 Treg")]
+CD8T <- Tcell[,Tcell@meta.data$Celltype %in% c("CD8 Naive", "CD8 Tcm","CD8 Tem", "CD8 Teff", "CD8 Tex",'Trm-like')] 
+Other <- Tcell[,Tcell@meta.data$Celltype %in% c("Trm-like",'NKT',"MAIT","γδT")] 
+#umap
+mycolor<-c("#A3CFE8",   # CD4 naive
+   "#8AC4C1",# CD4 Tscm
+  "#41A6AB",  # CD4 Tcm
+  "#DFAA81", # CD4 Tem
+   '#CA8652', # CD4 Teff
+   "#246B9A", # CD4 Treg
+  "#CDB4D8",  # CD8 naive
+  '#EC8EC8',  # CD8 Tcm
+  "#764B88",  # CD8 Tem
+  "#A0478D",  # CD8 Teff
+  "#F7B7A3",  # CD8 Tex
+ "#D48B8B",  # Trm -like
+ "#F37A6A",  # NKT
+  "#9DAE55",  # MAIT
+ "#64AE55")   # gdT # "#F37A6A",  # Trm-like "F15A52",  # CD8 Tex
+DimPlot(Tcell,group.by = 'Celltype',label = T,cols = mycolor,raster = T)
+
+#气泡图
+DotPlot(Tcell,features = c('CD3E','CD4','CD8A','SELL','TCF7','LEF1','IL7R','CCR7','CD28','FAS',
+'PRF1','GNLY','GZMK','GZMH','FOXP3','IKZF2',
+'CD69','LAG3','TOX','TIGIT','CTLA4','PDCD1','MKI67','ITGAE',
+'NCAM1',"FCGR3A","KLRC2",'SLC4A10',
+'TRAV1-2','TRDC','TRDV2','TRGV9'),cols = c('#A7A3B2','#2F0B95'),group.by = 'Celltype')+coord_flip()+
+  theme(axis.text.y = element_text(size = 10))+
+  theme(axis.text.x = element_text(size=10,angle=60,vjust = 0.9,hjust = 0.9),
+        legend.title= element_text(size = 10))#scale_y_discrete(limits=cluster.order)
+#每个个体T细胞比例
+t <- as.matrix(prop.table(table(Tcell$Celltype, Tcell$orig.ident), margin = 2)*100) 
+p <- as.data.frame(t)
+
+colnames(p) <-c("cluster","Disease","proportion")
+p$Disease <- factor(p$Disease, levels = c("GZ5","GZ6","GZ7","GZ8","GZ9","YZ5","YZ6","YZ7","YZ8","YZ9",
+  "YZ5A","YZ6A","YZ7A","YZ8A","YZ9A","YZ5C","YZ6C","YZ7C","YZ8C","YZ9C","YZ5D","YZ6D","YZ7D","YZ8D","YZ9D"))
+
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 90,hjust = 0.5,vjust = 0.5))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_fill_manual(values =mycolor)+
+  ylab("Proportion(%)")
+#基因表达
+VlnPlot(Tcell, 
+        features = c("STAT1", "TBX21", "IRF1", "CIITA"),
+        pt.size = 0,
+        group.by = 'Celltype',cols =mycolor,
+        stack = F,
+        ncol = 1) +
+theme(axis.title.x = element_blank())
+DimPlot(Tcell,group.by = 'TCR',raster = F,cols =c('#2F0B95','#A7A3B2'))
+
+Pre <-Tcell[,Tcell@meta.data$condition1 %in% c('HSCT-0')]
+HD <-Tcell[,Tcell@meta.data$condition1 %in% c('HD')]
+M1 <-Tcell[,Tcell@meta.data$condition1 %in% c('HSCT-1')]
+M3 <-Tcell[,Tcell@meta.data$condition1 %in% c('HSCT-3')]
+M6 <-Tcell[,Tcell@meta.data$condition1 %in% c('HSCT-6')]
+
+Tcell$cloneType[Tcell$cloneType == "Hyperexpanded (100 < X <= 10000)"] <- "Hyperexpanded (100 < X <= 5000)"
+
+#TCR 占比
+t <- as.matrix(prop.table(table(Tcell1$cloneType,Tcell1$Celltype), margin = 2)*100)#去除γδT
+p <- as.data.frame(t)
+colnames(p) <-c("cluster","Disease","proportion")
+group.colors <- c('#F43A3A','#F4A73A','#8ACB03','#03CBB0','#0269DD','#D8DADD')
+ggplot(p,aes(Disease,proportion,fill=cluster))+
+  geom_bar(stat="identity",position="fill")+
+  ggtitle("")+
+  theme_bw()+
+  theme(axis.ticks.length=unit(0.1,'cm'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 0.8,vjust = 0.5))+
+  guides(fill=guide_legend(title=NULL))+
+  scale_fill_manual(values =group.colors)+ggtitle("Tcell")+
+  theme(plot.title = element_text(hjust = 0.5))#Pre-HSCT HD HSCT-6M Tcell
+```
+
+```{r}
+#T细胞 比例随时间变化
+t <- prop.table(table(Tcell$Celltype, Tcell$condition), margin = 2)
+p <- as.data.frame(t)
+p$x <- rep(c(1:5), each=15)
+ggplot(p, aes(x, Freq, fill = Var1)) +
+  geom_area(size = 0.5, colour = "white") +
+  scale_fill_manual(name = "Cluster",values = mycolor) +
+  scale_x_continuous(breaks = 1:5, labels = c('Pre','HD','1M','3M','6M')) +
+  theme_bw() +
+  theme(panel.border = element_rect(size = 1),
+        axis.text.x = element_text(size = 10),  # 调整x轴文本大小为12
+        axis.title.x = element_blank(),  # 去掉x轴标题
+        axis.title.y = element_text(size = 12),  # 调整y轴标题字体大小为14
+        axis.text.y = element_text(size = 10)) +  # 调整y轴文本字体大小为12
+  labs(y = "Proportion (%)") +
+  guides(fill = guide_legend(ncol = 1))
+```
+
+```{r}
+#CD4 CD8 比例随时间变化
+t <- prop.table(table(Other$Celltype, Other$condition), margin = 2)
+p <- as.data.frame(t)
+p$x <- rep(c(1:5), each=15)
+ggplot(p, aes(x, Freq, fill = Var1)) +
+  geom_area(size = 0.5, colour = "white") +
+  scale_fill_manual(name = "Cluster",values = mycolor) +
+  scale_x_continuous(breaks = 1:5, labels = c('Pre','HD','1M','3M','6M')) +
+  theme_bw() +
+  theme(panel.border = element_rect(size = 1),
+        axis.text.x = element_text(size = 10),  # 调整x轴文本大小为12
+        axis.title.x = element_blank(),  # 去掉x轴标题
+        axis.title.y = element_text(size = 12),  # 调整y轴标题字体大小为14
+        axis.text.y = element_text(size = 10)) +  # 调整y轴文本字体大小为12
+  labs(y = "Proportion (%)") +
+  guides(fill = guide_legend(ncol = 1))
+```
+
+```{r}
+# 从Seurat对象中提取metadata
+metadata <- Tcell@meta.data
+
+# 绘图
+ggplot(metadata, aes(orig.ident, fill = cloneType)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~Celltype) +
+  theme_bw() +
+  theme(
+    axis.ticks.length = unit(0.1,'cm'),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 0.8, vjust = 0.5)
+  ) +
+  guides(fill = guide_legend(title = NULL)) +
+  scale_fill_manual(values = group.colors) +
+  labs(y = "Proportion", x = "Group") +
+  ggtitle("TCR Clone Distribution") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+#每个患者T细胞umap
+YZ5T <- Tcell[,Tcell@meta.data$orig.ident %in% c('GZ5','YZ5','YZ5A','YZ5C','YZ5D')]
+YZ6T <- Tcell[,Tcell@meta.data$orig.ident %in% c('GZ6','YZ6','YZ6A','YZ6C','YZ6D')]
+YZ7T <- Tcell[,Tcell@meta.data$orig.ident %in% c('GZ7','YZ7','YZ7A','YZ7C','YZ7D')]
+YZ8T <- Tcell[,Tcell@meta.data$orig.ident %in% c('GZ8','YZ8','YZ8A','YZ8C','YZ8D')]
+YZ9T <- Tcell[,Tcell@meta.data$orig.ident %in% c('GZ9','YZ9','YZ9A')]
+
+DimPlot(YZ5T,group.by = 'Celltype',label = F,split.by = 'condition1',cols = mycolor,ncol = 1)+ggtitle('YZ5')
+DimPlot(YZ6T,group.by = 'Celltype',label = F,split.by = 'condition1',cols = mycolor,ncol = 1)+ggtitle('YZ6')
+DimPlot(YZ7T,group.by = 'Celltype',label = F,split.by = 'condition1',cols = mycolor,ncol = 1)+ggtitle('YZ7')
+DimPlot(YZ8T,group.by = 'Celltype',label = F,split.by = 'condition1',cols = mycolor,ncol = 1)+ggtitle('YZ8')
+DimPlot(YZ9T,group.by = 'Celltype',label = F,split.by = 'condition1',cols = mycolor,ncol = 1)+ggtitle('YZ9')
+```
+
+##密度图
+```{r}
+p$data%>% 
+  ggplot(aes(UMAP_1, UMAP_2)) +
+  stat_density_2d(aes(fill=(..level..-min(..level..))/(max(..level..)-min(..level..))),
+                  geom='polygon',contour=T) +
+  scale_fill_distiller(palette="Blues",direction=1,name="Density") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        panel.border = element_rect(color = "black", fill = NA),  # 设置分面图的外框为黑色
+        strip.background = element_blank(),
+        strip.text = element_text(size=12,hjust=0.5),
+        legend.position="none") +
+  facet_wrap(~condition, ncol = 3)
+```
+
+```{r}
+# TCR四分位间距
+data <- Tcell@meta.data[,c( "tcr_counts","Celltype","UMAP_1","UMAP_2","Tcb1","condition")]
+data <- data[!is.na(data$Tcb1), ]
+a <- data %>%
+  group_by(Tcb1) %>%
+  mutate(tcr_counts=n()) %>%
+  ungroup() %>%
+  filter(tcr_counts>2) %>% 
+  distinct() %>%
+  mutate(`TCR quantile`=cut(tcr_counts,breaks=quantile(tcr_counts, probs=seq(0,1, by=0.25),na.rm=TRUE),include.lowest=TRUE)) %>%
+  mutate(Cluster=as.factor(Celltype)) %>%
+  ggplot(.,aes(x=reorder(Tcb1,tcr_counts),y=log(tcr_counts),colour=`TCR quantile`)) +
+  geom_point() +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        legend.position="none") +
+  xlab("TCRb CDR3") +
+  ylab("Log TCRb CDR3 counts")
+#添加legeng
+legend <- cowplot::get_legend(a)
+a_l <- as.ggplot(legend)
+```
+
+```{r}
+##四等分的TCR图
+p <- DimPlot(Tcell,group.by = 'Celltype',split.by = 'condition')
+common_columns <- which(rownames(Tcell1@meta.data) %in% rownames(p$data))
+p$data$Tcb1[common_columns] <- Tcell@meta.data$Tcb1
+
+p$data %>%
+  filter(!is.na(Tcb1)) %>%
+  group_by(Tcb1) %>%
+  mutate(tcr_counts=n()) %>%
+  filter(tcr_counts>3) %>%
+  ungroup() %>%
+  distinct() %>%
+  mutate(tcr_quantile=cut(tcr_counts,breaks=quantile(tcr_counts, probs=seq(0,1, by=0.25),na.rm=TRUE),include.lowest=TRUE)) %>%
+  mutate(Cluster=as.factor(Celltype)) %>%
+  ggplot(.,aes(x=UMAP_1,y=UMAP_2)) +
+  stat_density_2d(aes(fill=(..level..-min(..level..))/(max(..level..)-min(..level..))),
+                  geom='polygon',contour=T,contour_var = "ndensity") +
+  scale_fill_distiller(palette="Blues",direction=1,name="Density") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        strip.background = element_blank(),
+        legend.position="none") +
+  facet_wrap(~tcr_quantile,
+             labeller = labeller(tcr_quantile=quantile_labs))
+panel.border = element_blank()
+legend <- cowplot::get_legend(p2x)
+p2_l <- as.ggplot(legend)
+```
+
+```{r}
+## Upset plot for shared TCRs across clusters
+tcr_overlap <- 
+  p$data%>%
+  filter(!is.na(Tcb1)) %>%
+  group_by(Tcb1) %>%
+  mutate(tcr_counts=n()) %>%
+  filter(tcr_counts>2) %>%
+  split(.$Celltype) %>%
+  lapply(.,function(x) x %>% pull(Tcb1))
+
+## Shared TCRs pre- and post-treatment
+tcr_counts_list <- p$data %>%
+  filter(!is.na(Tcb1)) %>%
+  group_by(Tcb1) %>%
+  mutate(tcr_counts=n()) %>%
+  ungroup() %>%
+  filter(tcr_counts>2) %>%
+  group_split(condition) %>%
+  lapply(.,function(x) {
+    x %>%
+      group_by(Tcb1) %>%
+      mutate(tcr_counts_tissue=n()) %>%
+      distinct()
+  })
+
+sapply(tcr_counts_list,function(x) x[1,c("condition")])
+sapply(tcr_counts_list,function(x) dim(x))
+
+# Function to assess overlap and differences 评估重叠和差异的功能
+tcr_overlap <- function(input_tcrs1,input_tcrs2,measurement_type="intersect") {
+  
+  if (measurement_type=="intersect") {
+    
+    length(intersect(input_tcrs1,input_tcrs2))/length(input_tcrs2)
+    
+  } else if (measurement_type=="setdiff") {
+    
+    length(setdiff(input_tcrs1,input_tcrs2))/length(input_tcrs1)
+    
+  } else {
+    
+    print("Measurement_type not supported")
+    
+  }
+  
+}
+
+# 只在移植后出现的TCR
+tcrs_post_only <- setdiff(do.call(c,lapply(tcr_counts_list[c(3,4,5)],function(x) x$Tcb1)),
+                          do.call(c,lapply(tcr_counts_list[c(1,2)],function(x) x$Tcb1))#找出第一个向量中存在但第二个向量中不存在
+)
+tcrs_post_only <- tcrs_post_only[tcrs_post_only != "NA"]
+# Pre和HD都有的TCR
+tcrs_both <- intersect(do.call(c,lapply(tcr_counts_list[c(1)],function(x) x$Tcb1)),
+                       do.call(c,lapply(tcr_counts_list[c(2)],function(x) x$Tcb1))
+)
+
+# 移植后和HD都有的TCR
+tcrs_bothhd <- intersect(do.call(c,lapply(tcr_counts_list[c(3,4,5)],function(x) x$Tcb1)),
+                       do.call(c,lapply(tcr_counts_list[c(2)],function(x) x$Tcb1))
+)
+tcrs_bothhd <- tcrs_bothhd[tcrs_bothhd != "NA"]
+tcrs_bothhd <- setdiff(tcrs_bothhd,tcrs_both)
+# 移植后和患者移植前都有的TCR
+tcrs_bothpre <- intersect(do.call(c,lapply(tcr_counts_list[c(3,4,5)],function(x) x$Tcb1)),
+                       do.call(c,lapply(tcr_counts_list[c(1)],function(x) x$Tcb1))
+)
+tcrs_bothpre <- tcrs_bothpre[tcrs_bothpre != "NA"]
+tcrs_bothpre <- setdiff(tcrs_bothpre,tcrs_both)
+
+#在其中重新建一列分类是否TCR共享
+p$data <- p$data %>%
+  mutate(share = case_when(
+    Tcb1 %in% tcrs_post_only ~ "tcrs_post_only",
+    Tcb1 %in% tcrs_both ~ "tcrs_both",
+    Tcb1 %in% tcrs_bothhd ~ "tcrs_bothhd",
+    Tcb1 %in% tcrs_bothpre ~ "tcrs_bothpre",
+    TRUE ~ "other"  # 对于没有匹配的项
+  ))
+
+## Plot Shared and Emergent TCRs
+# Extract range
+plot_ranges <- p$data %>%
+  ggplot(.,aes(x=UMAP_1,y=UMAP_2)) +
+  stat_density_2d(aes(fill=(..level..-min(..level..))/(max(..level..)-min(..level..))),
+                  geom='polygon',contour=T,contour_var = "ndensity") +
+  scale_fill_distiller(palette="Blues",direction=1,name="Density") +
+  scale_x_continuous(expand = c(0, 0), limits = c(-8, 8)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(-8, 9)) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+#Pre和移植后共享克隆
+p$data %>%
+  filter(!is.na(Tcb1)) %>%
+  mutate(treatment=recode(condition,PreHSCT="Pre",
+                          HD="HD",
+                          Post1M="Post-1M",
+                          Post3M="Post-3M",
+                          Post6M="Post-6M")) %>%
+  mutate(treatment=as.factor(treatment)) %>% 
+  mutate(treatment=factor(treatment,levels=c(
+    "Pre",
+    "HD",
+    "Post-1M",
+    "Post-3M",
+    "Post-6M"
+  ))) %>% 
+  ggplot(.,aes(x=UMAP_1,y=UMAP_2)) +
+  stat_density_2d(aes(fill=(..level..-min(..level..))/(max(..level..)-min(..level..))),
+                  geom='polygon',contour=T,contour_var = "ndensity") +
+  scale_fill_distiller(palette="Blues",direction=1,name="Density") +
+  scale_x_continuous(expand = c(0, 0), limits = c(-8, 8)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(-8, 9)) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        strip.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  ggtitle("Shared TCRs Pre- and Post-HSCT") +
+  xlim(layer_scales(plot_ranges)$x$range$range) +
+  ylim(layer_scales(plot_ranges)$y$range$range)+
+  facet_wrap(~treatment+share)
+  
+
+#HD和移植后共享克隆
+p$data %>%
+  filter(!is.na(Tcb1)) %>%
+  filter(!condition %in% "Pre") %>%
+  filter(Tcb1 %in% tcrs_bothhd) %>%
+  mutate(treatment=recode(condition,PreHSCT="Pre",
+                          HD="HD",
+                          Post1M="Post-1M",
+                          Post3M="Post-3M",
+                          Post6M="Post-6M")) %>%
+  mutate(treatment=as.factor(treatment)) %>% 
+  mutate(treatment=factor(treatment,levels=c(
+    "Pre",
+    "HD",
+    "Post-1M",
+    "Post-3M",
+    "Post-6M"
+  ))) %>% 
+  ggplot(.,aes(x=UMAP_1,y=UMAP_2)) +
+  stat_density_2d(aes(fill=(..level..-min(..level..))/(max(..level..)-min(..level..))),
+                  geom='polygon',contour=T,contour_var = "ndensity") +
+  scale_fill_distiller(palette="Blues",direction=1,name="Density") +
+  scale_x_continuous(expand = c(0, 0), limits = c(-8, 8)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(-8, 9)) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        strip.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  ggtitle("Shared TCRs HD and Post-HSCT") +
+  xlim(layer_scales(plot_ranges)$x$range$range) +
+  ylim(layer_scales(plot_ranges)$y$range$range) +
+  facet_wrap(~treatment+share)
+
+#移植特有的克隆
+p$data %>%
+  filter(!is.na(Tcb1)) %>%
+  filter(!condition %in% "Pre") %>%
+  filter(Tcb1 %in% tcrs_post_only) %>%
+  mutate(treatment=recode(condition,PreHSCT="Pre",
+                          HD="HD",
+                          Post1M="Post-1M",
+                          Post3M="Post-3M",
+                          Post6M="Post-6M")) %>%
+  mutate(treatment=as.factor(treatment)) %>% 
+  mutate(treatment=factor(treatment,levels=c(
+    "Pre",
+    "HD",
+    "Post-1M",
+    "Post-3M",
+    "Post-6M"
+  ))) %>% 
+  ggplot(.,aes(x=UMAP_1,y=UMAP_2)) +
+  stat_density_2d(aes(fill=(..level..-min(..level..))/(max(..level..)-min(..level..))),
+                  geom='polygon',contour=T,contour_var = "ndensity") +
+  scale_fill_distiller(palette="Blues",direction=1,name="Density") +
+  scale_x_continuous(expand = c(0, 0), limits = c(-8, 8)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(-8, 9)) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text = element_blank(),
+        strip.background = element_blank(),
+        legend.position="none",
+        plot.title = element_text(hjust = 0.5)) +
+  facet_wrap(~treatment) +
+  ggtitle("Emergent TCRs Post-HSCT") +
+  xlim(layer_scales(plot_ranges)$x$range$range) +
+  ylim(layer_scales(plot_ranges)$y$range$range) +
+  facet_wrap(~treatment)
+```
+
+##评分
+```{r}
+texterm <- c("CXCL13", "ENTPD1", "PRF1", "GZMH", "GZMB", "GZMA", "BATF", "LYST", "BATF", "TIGIT", "LAG3", "HAVCR2", "PDCD1", "PRDM1", "RBPJ", "SLAMF7", "CCL4", "TNFSF10", "TBX21", "NFATC1", "HIF1A", "TNFRSF4", "CXCR6", "PTPN7", "EWSR1", "HLA-DPB1", "HLA-DPA1", "UBXN1", "PSMB9", "LY6E", "CCNDBP1", "IRF9", "LCP2")
+texpro <- c("CXCL13", "ENTPD1", "PRF1", "GZMH", "GZMB", "GZMA", 
+"BATF", "LYST", "BATF", "TIGIT", "LAG3", "HAVCR2","PRDM1", "RBPJ", "SLAMF7", "CCL4", "TNFSF10","TBX21", "NFATC1", "HIF1A", "TNFRSF4", "CXCR6", "PTPN7", 
+"EWSR1", "HLA-DPB1", "HLA-DPA1", "UBXN1", "PSMB9", "LY6E", 
+"CCNDBP1", "IRF9", "LCP2")
+
+TCRsign <- c("PSMB1", "CD4", "PSMC4", "WAS", "PSMA4", "LCP2", "PIK3CB", "CUL1", "TAB2", "PRKCQ", "PSME4", "UBE2D1", "FBXW11", "PAG1", "PAK3", "PTPRC", "FYB1", "PSMC5", "PSME1", "PSMD5", "PSMD8", "CDC34", "GRAP2", "PSMC6", "PSMA3", "PSMC1", "PSMB5", "PSMA6", "NFKBIA", "PSME2", "PSMA7", "PSMD10", "PSMD7", "CSK", "RIPK2", "IKBKB", "PIK3R2", "PSMA2", "PSMD3", "PSMD11", "NFKB1", "PSMD9", "ITK", "SKP1", "ZAP70", "PSMD14", "PIK3CA", "PLCG1", "VASP", "PSMF1", "PSMB2", "SEM1", "PSMA1", "PSME3", "UBE2D2", "PTPN22", "CD101", "MAP3K7", "PSMB7", "PDPK1", "PSMB6", "BCL10", "PSMA5", "RPS27A", "PIK3R1", "PTPRJ", "PAK1", "UBC", "ENAH", "PSMA8", "NCK1", "PSMD4", "PSMB4", "CD3G", "PSMC2", "TRAT1", "PSMD6", "PSMC3", "BTRC", "CD3D", "INPP5D", "UBB", "PTEN", "MALT1", "RELA", "PSMD1", "TRAF6", "PSMD2", "UBE2N", "PAK2", "LCK", "PSMD13", "HLA-DRB1", "EVL", "HLA-DQA1", "PSMD12", "PLCG2", "CARD11", "HLA-DRB5", "CD247", "CD3E", "PSMB8", "HLA-DRA", "PSMB10", "TRAV8-4", "TRAV19", "TRAV29DV5", "CHUK", "LAT", "UBA52", "PSMB11", "HLA-DPB1", "HLA-DPA1", "HLA-DQB2", "HLA-DQA2", "PSMB9", "UBE2V1", "IKBKG", "TRBV12-3", "PSMB3", "TRBV7-9")
+activation<- c("MAP3K14", "CD4", "FYN", "PPP2R5A", "PPP2R5B", "CDC42", "PAK3", "PPP2R5C", "GRAP2", "TRIB3", "CSK", "PPP2CB", "AKT2", "PPP2R1A", "PIK3R2", "MAP3K8", "PTPN6", "PPP2R5D", "PPP2CA", "CD86", "AKT3", "PIK3R3", "MAPKAP1", "CD274", "CD80", "PIK3CA", "RAC1", "PPP2R1B", "PDPK1", "VAV1", "AKT1", "PIK3R1", "PAK1", "PPP2R5E", "TNFRSF14", "THEM4", "ICOSLG", "CD3G", "CTLA4", "ICOS", "RICTOR", "CD3D", "MLST8", "YES1", "GRB2", "CD28", "PTPN11", "PAK2", "LCK", "BTLA", "PRR5", "PDCD1", "HLA-DRB1", "HLA-DQA1", "SRC", "PDCD1LG2", "HLA-DRB5", "MTOR", "CD247", "CD3E", "HLA-DRA", "TRAV8-4", "TRAV19", "TRAV29DV5", "HLA-DPB1", "HLA-DPA1", "HLA-DQB2", "HLA-DQA2", "LYN", "TRBV12-3", "TRBV7-9")
+cycle <-  c("MAD1L1", "CDC27", "POLR2J", "PRKAR2B", "DBF4", "PAFAH1B1", "E2F2", "PSMB1", "CDK11A", "NCAPD2","BRCA1", "PSMC4", "POLA2", "MNAT1", "MRE11", "SPAST", "PHF20", "NCAPH2", "VRK2", "NUP160","CENPQ", "RFC1", "TUBG2", "SPDL1", "PSMA4", "OFD1", "POLR2B", "TPR", "RSF1", "RFC2", "RAD51","ANAPC4", "SDCCAG8", "SYNE2", "SPO11", "CUL1", "MSH4", "PPP1R12A", "NDC1", "WAPL", "POLD1","MCM10", "PPP2R5A", "STAG3", "TP53BP1", "KIF2A", "PSME4", "SIRT2", "PPP2R5B", "NUP133","CSNK2A2", "PRKACA", "UBE2D1", "SMC1A", "HMMR", "FBXW11", "NDE1", "MCM2", "CLASP1", "NUP37","GTSE1", "TUBA3D", "MCM6", "MLH1", "PPP1R12B", "DYNC1I2", "POLD3", "FKBP6", "SMC1B", "PPP2R5C","PCM1", "CDC14A", "HSP90AA1", "RBL1", "NDC80", "GSK3B", "XPO1", "TNPO1", "PDS5B", "CHMP2B","ATRX", "SEH1L", "ORC1", "ZW10", "PSMC5", "UIMC1", "AURKA", "TPX2", "DYNLL1", "ANAPC5", "BIRC5","PCBP4", "NUDC", "ORC6", "PSME1", "HAUS4", "TINF2", "CLSPN", "NUP50", "CDC45", "CDC6", "CDC23","AAAS", "PSMD5", "NUP188", "HSP90AB1", "JAK2", "ABL1", "CDC7", "PSMD8", "POLR2E", "MAPK1","POLR2F", "CENPM", "DMC1", "SUN2", "MCM5", "RBX1", "EP300", "RANGAP1", "POLE2","PSMC6", "PSMA3", "VRK1", "PSMC1", "PSMB5", "PSMA6", "PSME2", "REC8", "GINS1", "NINL","MYBL2", "RAE1", "TUBB1", "PSMA7", "DIDO1", "PTK6", "CDC25B", "CSNK2A1", "MAPRE1","E2F1", "CHMP4B", "LPIN2", "CEP76", "CEP192", "RBBP8", "PSMD10", "POLA1", "STAG2",
+"RBBP7", "EMD", "CENPI", "MAPK3", "NUP93", "CENPT", "ACD", "POLR2C", "PSMD7", "UBE2I","RBL2", "CCP110", "CEP152", "OIP5", "NBN", "RAB2A", "PPP2CB", "MCM4", "TUBB4A", "CCNE1","AKT2", "PIAS4", "POLR2I", "FZR1", "BABAM1", "LIG1", "PPP2R1A", "CDK6", "H2AZ2", "RPA3","CEP41", "PSMA2", "POLD2", "STN1", "SMC3", "UBE2S", "PSMD3", "RAD51C", "KPNB1", "NUP88","PSMD11", "YWHAE", "GAR1", "NSD2", "NCAPG", "PPP6R3", "CCND1", "ANAPC15", "CEP164", "NUP98","PSMD9", "FOXM1", "CDKN1B", "RFC5", "NUP107", "FBXO5", "MCM3", "RNF8", "E2F3", "GMNN", "CCND3","PPP2R5D", "CEP72", "KIF20A", "LMNB1", "RAD1", "RAD50", "SKP1", "NUP155", "PPP2CA", "SMC4","CEP70", "TFDP2", "GORASP1", "CENPA", "PSMD14", "POLE4", "CHMP3", "GORASP2", "ORC2", "ORC4","SUMO1", "ALMS1", "HDAC1", "AKT3", "CDC20", "BLZF1", "NEK2", "NSL1", "CENPF", "RPA2", "STAG1","CCND2", "SET", "CNTRL", "NEK6", "PPP6C", "NEK9", "MLH3", "NUP43", "CENPL", "MASTL", "TMPO","NCAPH", "MND1", "KIF18A", "PDS5A", "ZWINT", "CDKN2C", "CENPK", "OPTN", "CDK2", "TUBA1B","HJURP", "B9D2", "H2BC11", "CDKN1A", "NUP153", "NUP85", "PSMF1", "MCM8", "MAX", "CEP250", "PSMB2", "TUBGCP3", "HSPA2", "NUP214", "PKMYT1", "CHTF18", "TUBA4A", "AKAP9", "SEM1","TUBGCP6", "YWHAH", "POT1", "HERC2", "ARPP19", "PSMA1", "CDKN2D", "AJUBA", "MIS18BP1",
+"CDKN1C", "SGO1", "MAU2", "CDC16", "TUBGCP2", "CHMP2A", "CLIP1", "DKC1", "SYNE1","GINS2", "HAUS8", "TUBG1", "PSME3", "PSMC3IP", "TOP2A", "NUP210", "RAN", "RPA1", "H3-3B", "TERF2", "VPS4A", "PCNA", "LPIN3", "CCNA1", "RFC3", "E2F5", "TEX15", "CCNB1", "CDK7","YWHAQ", "LPIN1", "CCNH", "CABLES1", "CDCA8", "ORC3", "CDK4", "ESPL1", "MDM2", "DYNC1LI2","BORA", "NUP42", "HUS1", "BRIP1", "ODF2", "SMC2", "CDK5RAP2", "PSMB7", "DSCC1", "MYC",
+"DCTN3", "TUBB2A", "TUBB2B", "MDC1", "NUMA1", "PPP2R1B", "KIF23", "KNL1", "HAUS2","TUBGCP4", "RAB1A", "CENPO", "ACTR1A", "DNA2", "BARD1", "NUP54", "USO1", "CENPE",
+"PHLDA1", "NEDD1", "SYCP3", "NUP58", "BRCA2", "RB1", "PIF1", "KIF2B", "ESCO1", "WRAP53","TP53", "CSNK1D", "ANAPC11", "CEP131", "AKT1", "PSMB6", "PLK4", "ITGB3BP", "KIF2C","PSMA5", "NME7", "COP1", "NUF2", "ENSA", "LBR", "EML4", "RPS27A", "POLR2D", "DYNC1LI1","SHQ1", "CENPC", "CCNA2", "SKP2", "NHP2", "H2BC1", "PRIM2", "CDCA5", "NCAPG2", "HDAC8","MCPH1", "CETN2", "CHMP7", "GINS4", "TERF1", "POLR2K", "HAUS6", "CDKN2B", "CDKN2A","CEP78", "POLE3", "ATM", "INCENP", "CHEK1", "DSN1", "TEX12", "UBC", "RAD9B", "NEK7","NCAPD3", "CENPU", "CENPJ", "MZT2B", "TUBA3E", "HAUS1", "SPC25", "RAD17", "CENPH","ANAPC1", "SMARCA5", "RANBP2", "AHCTF1", "PPP2R5E", "CC2D1B", "PRKCA", "BUB3", "PSMA8","SKA1", "FBXL18", "NUP205", "BUB1B", "SEC13", "CCNB2", "DYRK1A", "BABAM2", "H2BC5","CDC25C", "H4C8", "DYNC1I1", "MIS18A", "PSMD4", "PSMB4", "PCNT", "TAOK1", "PMF1", "LMNA","PSMC2", "ZNF385A", "SYCE2", "SPC24", "LEMD2", "RBBP4", "NUP35", "H3-3A", "ABRAXAS1","SGO2", "CLASP2", "PSMD6", "TOPBP1", "POLR2H", "RFC4", "RNF168", "H2AZ1", "CDC25A","ATRIP", "MAD2L1", "ANAPC10", "NIPBL", "PRDM9", "TERT", "PTTG1", "CHMP4C", "RAD21","ORC5", "SUN1", "YWHAZ", "WRN", "PSMC3", "CEP57", "BTRC", "ANAPC16", "CENPN", "WEE1","PRKCB", "MCM7", "NDEL1", "TERF2IP", "PLK1", "YWHAB", "GOLGA2", "PPP2R3B", "RAB8A","CDT1","TUBA1A", "TUBA1C", "MIS12", "TK1", "POLR2G", "H3-4", "FEN1", "CHTF8", "E2F6", "UBE2V2", "BUB1", "CENPX", "YWHAG", "UBE2E1", "CDK1", "UBB", "ESCO2", "SYCE1", "RHNO1", "RRM2", "RAD9A", "PHF8", "KAT5", "CKS1B", "TUBB8B", "MZT2A", "PSMD1", "LEMD3", "EXO1", "ZWILCH", "CEP135", "RAB1B", "ATR", "UBE2C", "PSMD2", "DCTN2", "CKAP5", "CENPS", "CCNE2", "BANF1", "PPP2R2D", "POLD4", "RMI2", "RUVBL1", "SFN", "CTDNEP1", "TUBB6", "SSNA1", "CHMP6", "ANAPC2", "CDC26", "TYMS", "ANKLE2", "POLE", "TOP3A", "POLR2L", "UBE2N", "RPS27", "TUBAL3", "RMI1", "CTC1", "AURKB", "RCC2", "RCC1", "H2AC6", "H2BC4", "NPM1", "POLR2A", "GINS3", "NOP10", "IST1", "SKA2", "CEP63", "RUVBL2", "FBXL7", "H3C13", "CHEK2", "TUBA8", "LIN9", "KMT5A", "H2AC20", "KNTC1", "H2BC21", "H2BC13", "BRCC3", "PSMD13", "PPP1CC", "ERCC6L", "TUBB4B", "CENPP", "H2AX", "LIN54", "SYCP2", "TUBB", "POM121", "ANAPC7", "H2AC7", "H2BU1", "H4C3", "DYNC1H1", "SRC", "H3C12", "PSMD12", "H4C11", "BLM", "H3C4", "H4-16", "H2BC12", "TUBA3C", "PRIM1", "SFI1", "TFDP1", "MDM4", "CEP290", "SYCP1", "CENPW", "RPA4", "DAXX", "PSMB8", "FKBPL", "MSH5", "CSNK2B", "DCTN1", "MZT1", "PSMB10", "E2F4", "CNEP1R1", "LCMT1", "LIN52", "ANKRD28", "NUP62", "CEP43", "HAUS7", "PPP1CB", "CSNK1E", "HAUS3", "PPME1", "SYCE3", "PPP2R2A", "UBA52", "PSMB11", "DHFR", "H2BC15", "PSMB9", "TUBA4B", "H2AJ", "CDK11B", "HAUS5", "LYN", "CHMP4A", "TEN1", "RTEL1", "TUBB3", "TUBB8", "DYNLL2", "LIN37", "H4C14", "POM121C", "H4C12", "H2BC14", "H2BC8", "H3C8", "H2AB1", "H2BC6", "H4C6", "H2BC17", "H3C6", "H4C13", "H3C11", "H2BC9", "H3C1", "TUBGCP5", "H4C9", "H2AC14", "H2BC3", "H4C5", "H2AC8", "H4C4", "H2BC7", "H3C7", "PSMB3", "H2AC4", "H2BC10", "H4C1", "H4C2", "H3C10", "H3C2", "H3C3")
+
+cytotoxicity <- c("AGTRAP", "AGER", "AP1G1", "APOL1", "ARG1", "ARL8B", "ARRB2", "ATN1", "B2M", "BAD", "BCL2L11", "C3", "C8A", "C8B", "C8G", "C9", "CADM1", "CAMP", "CCL1", "CCL2", "CCL8", "CCL11", "CCL17", "CCL19", "CCL19P1", "CCL19P3", "CCL19P4", "CCL19P5", "CCL19P6", "CCL20", "CCL21", "CCL21B", "CCL21D", "CCL21E", "CCL21F", "CCL22", "CCL25", "CCL27", "CCL27P", "CCL27B", "CCL28", "CCR5", "CD1D1", "CD1D2", "CD2", "CD5L", "CD55", "CD59A", "CD59B", "CD160", "CD226", "CEACAM1", "CEBPG", "CFH", "CLEC2D", "CLEC7A", "CLEC12B", "CORO1A", "CR1L", "CRK", "CRTAM", "CST11", "CTSC", "CTSG", "CTSH", "CX3CR1", "CXCL1", "CXCL5", "CXCL9", "CXCL10", "CXCL11", "CXCL12", "CXCL13", "CXCL14", "CYRIB", "DAO", "DEFA4", "DEFA20", "DEFB20", "DEFB21", "DNASE1", "DNASE1L3", "EBAG9", "ELANE", "EMP2", "F2", "F2RL1", "FADD", "FCER2A", "FCGR1", "FCGR2B", "FCGR3", "FCGR4", "FGL2", "GAPDH", "GAPDH", "GAPDH", "GAPDH", "GBP2", "GBP2B", "GBP3", "GBP5", "GBP7", "GFER", "GFUS", "GIMAP3", "GIMAP5", "GZMA", "GZMB", "GZMC", "GZMD", "GZME", "GZMF", "GZMG", "GZMM", "GZMN", "HLA-DRA", "HLA-DQA1", "HLA-B","HAMP", "HAMP2", "HAVCR2", "HC", "HFE", "HMGN2", "HMGN2", "HPRT1", "HRG", "HSP90AB1", "HSPA8", "IFNG", "IGF2", "IGHE", "IGHG1", "IGHG2", "IGTP", "IL4", "IL7R", "IL12A", "IL12B", "IL13", "IL18", "IL18RAP", "IL21", "IL23A", "IRGM2", "ITGAM", "KIF5B", "KLRB1", "KLRB1A", "KLRB1B", "KLRB1C", "KLRB1F", "KLRC1", "KLRC2", "KLRC3", "KLRD1", "KLRE1", "KLRI1", "KLRI2", "KLRK1", "KNG1", "KNG2", "LAG3", "LAMP1", "LEP", "LGALS3", "LGALS9", "LTF", "LYST", "LYZ1", "LYZ2", "LYZ3", "LYZL6", "MBL1", "MBL2", "MILL1", "MILL2", "MR1", "MUC4", "MYD88", "NCF1", "NCKAP1L", "NCR3", "NECTIN2", "NINJ1", "NKG7", "NLRP6", "NOS2", "NPPB", "NTS", "OGA", "P2RX7", "PGLYRP1", "PGLYRP3", "PGLYRP4", "PIK3R6", "PLA2G2A", "PLEKHM2", "PNP", "POMC", "PPBP", "PPP3CB", "PRDX1", "PRF1", "PTPN6", "PTPRC", "PVR", "RAB27A", "RAET1", "RAET1B", "RAET1C", "RAET1D", "RAET1E", "RASGRP1", "RIPK3", "RNF19B", "ROMO1", "RPL30", "RPS19", "SCNN1B", "SERPINB9", "SERPINB9B", "SERPINB9C", "SERPINB9D", "SERPINB9E", "SERPINB9F", "SERPINB9G", "SERPINB9H", "SH2D1A", "SH2D1B1", "SH2D1B2", "SLAMF6", "SLC22A13", "SPAG11B", "SPI1", "STAP1", "STAT5A", "STAT5B", "STX7", "STX11", "STXBP2", "SYK", "TAC1", "TAP1", "TAP2", "TGFB1", "TREM1", "TREM3", "TUSC2", "TYROBP", "ULBP1", "ULBP3", "UNC13D", "VAMP7", "VAV1", "XCL1")
+```
+
+```{r}
+library(ggpubr)
+DefaultAssay(Tcell) <- "RNA"
+cd_features <- list(texpro)
+Tcell <- AddModuleScore(Tcell,#可改为想进行的seurat对象
+                          features = cd_features,
+                          ctrl = 100,
+                          name = "texpro")
+colnames(Tcell@meta.data) 
+```
+
+```{r}
+Palette <- c('#7030a0','#0070c0','#ff5050','#f78832','#70ad47')
+my_comparisons <- list(c("Pre","HD"),c("Post-1M", "HD"),
+     c("Post-3M", "HD"),c("Post-6M", "HD"))
+plot_data <- data.frame(group =CD4T$condition,Aging = CD4T$activation1)
+ggplot(plot_data, aes(x = group, y = Aging, color = group, fill = group)) +
+  geom_violin(position = position_dodge(width = 1), scale = 'width', color = "black") +
+  geom_boxplot(position = position_dodge(width = 1), outlier.size = 0.7, width = 0.1, show.legend = FALSE, color = "black") +
+  theme(panel.grid = element_blank(), panel.background = element_blank(), panel.border = element_blank(),
+        axis.line = element_line(color = "black"),
+        legend.title = element_blank(), legend.key = element_blank(),
+        axis.text.x = element_text(size = 12),  # 设置x轴字体大小为12
+        axis.text.y = element_text(size = 12),# 设置y轴字体大小为12
+        plot.title = element_text(hjust = 0.5)) +  # 设置标题居中
+  labs(x = '', y = '', title = 'CD4T cell Activation Score')+scale_fill_manual(values = Palette)+ 
+  stat_compare_means(comparisons = my_comparisons,label = "p.signif",tip.length=0) #Cytotoxicity Terminal exhaustion Proliferation TCR signaling Activation
+```
+
+
+##TCR
+```{r}
+Tcell$TCR <- ifelse(!is.na(Tcell$cloneType), "TCR+", "TCR-")
+Tcell$TCR <- factor(Tcell$TCR, levels = c("TCR+","TCR-"))
+DimPlot(Tcell1,group.by = 'TCR',split.by = 'orig.ident',ncol = 5,cols = c('#2F0B95','#A7A3B2'))
+DimPlot(Tcell,group.by = 'TCR',cols = c('#5CB0C3','#C3C8C9'))
+DimPlot(Tcell,group.by = 'cloneType')
+DimPlot(Tcell,group.by = 'cloneType',split.by = 'condition1',cols = c('#F43A3A','#F4A73A','#8ACB03','#03CBB0','#0269DD','#D8DADD'))
+```
+##T细胞OR比值
+```{r}
+table(Tcell$condition1,Tcell$Celltype)
+# 提供数据CRvsNR
+cr_counts <-  c(3814, 2675, 733, 381, 405, 429, 2350, 746, 444, 1417, 682, 103, 63, 1516, 536)#HD 去掉GZ9
+ctrl_counts <- c(3380, 2280, 611, 211, 140, 680, 1156, 911, 367, 1413, 925, 480, 156, 1314, 788)#6 Month
+#HD c(4354,3220,870,416,420,562,2575,879,548,1624,843,125,77,1595,816)#HD
+#6 Month c(571, 999, 417, 845, 1695, 154, 378, 1797, 605, 2764, 1685, 309, 145, 680, 450)#6 Month
+#3 Month c(399, 914, 449, 692, 969, 130, 299, 1783, 549, 2591, 1244, 302, 145, 808, 409)#3 Month
+#1 Month c(138, 438, 251, 439, 1193, 76, 105, 414, 134, 785, 496, 196, 33, 408, 337)#1 Month 去掉YZ9A
+#1 Month c(138, 438, 251, 439, 1193, 76, 105, 414, 134, 785, 502, 202, 33, 408, 338)#1 Month
+#Pre c(4050,2993,800,248,150,764,1497,1131,487,1635,1073,493,167,1455,1011)#Pre
+#Pre c(3380, 2280, 611, 211, 140, 680, 1156, 911, 367, 1413, 925, 480, 156, 1314, 788)#Pre 去掉YZ9
+cell_types <- c("CD4 Naive", "CD4 Tcm", "CD4 Tem", "CD4 Teff1", "CD4 Teff2", "CD4 Treg", "CD8 Naive", "CD8 Tem1", "CD8 Tem2", "CD8 Teff1", "CD8 Teff2", "CD8 Trm", "CD8 Tex", "MAIT", "γδT")
+# 创建一个函数来计算OR值、log2OR值和Fisher's精确检验的p值
+calculate_OR_and_pvalue <- function(cr_count, ctrl_count) {
+  # 计算OR值
+  odds_ratio <- (cr_count[1] / cr_count[2]) / (ctrl_count[1] / ctrl_count[2])
+  # 计算Fisher's精确检验的p值
+  fisher_test <- fisher.test(matrix(c(cr_count, ctrl_count), nrow = 2))
+  p_value <- fisher_test$p.value
+  # 计算log2OR值
+  log2_odds_ratio <- log2(odds_ratio)
+  # 计算log2OR值
+  log10_Pvalue <- -log10(p_value)
+  # 返回OR值、log2OR值和Fisher's精确检验的p值
+  return(list(OR = odds_ratio, log2_OR = log2_odds_ratio, p_value = p_value,log10_Pvalue=log10_Pvalue))
+}
+
+# 创建一个空列表来存储OR值、log2OR值和Fisher's精确检验的p值
+result_list <- list()
+
+# 循环遍历每种细胞类型，并计算OR值、log2OR值和Fisher's精确检验的p值
+for (i in seq_along(cell_types)) {
+  cr_count <- c(cr_counts[i], sum(cr_counts))
+  ctrl_count <- c(ctrl_counts[i], sum(ctrl_counts))
+  result_list[[i]] <- calculate_OR_and_pvalue(cr_count, ctrl_count)
+}
+
+# 将结果组合成数据框
+result_df <- data.frame(Cell_Type = cell_types, OR_Value = sapply(result_list, function(x) x$OR), 
+                        log2_OR_Value = sapply(result_list, function(x) x$log2_OR),
+                        p_value = sapply(result_list, function(x) x$p_value),
+                        log10_Pvalue = sapply(result_list, function(x) x$log10_Pvalue))
+
+# 输出结果
+print(result_df)
+###CRvsNR柱形图
+result_df$color <- ifelse(result_df$log2_OR_Value > 0, '#619CD9', '#E38D8C')
+result_df$significance <- ifelse(result_df$p_value < 0.001, "***", ifelse(result_df$p_value < 0.01, "**", ifelse(result_df$p_value < 0.05, "*", "n.s")))
+
+result_df$Cell_Type <- factor(result_df$Cell_Type, levels = c("CD4 Naive", "CD4 Tcm", "CD4 Tem", "CD4 Teff1", "CD4 Teff2", "CD4 Treg", "CD8 Naive", "CD8 Tem1", "CD8 Tem2", "CD8 Teff1", "CD8 Teff2", "CD8 Trm", "CD8 Tex", "MAIT", "γδT"), ordered = TRUE)
+# Plot
+ggplot(result_df, aes(x = Cell_Type, y = log2_OR_Value, fill = color)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = significance, 
+                y = ifelse(log2_OR_Value >= 0, log2_OR_Value-0.05, log2_OR_Value)), 
+            vjust = ifelse(result_df$log2_OR_Value >= 0, -0.5, 1.5), size = 4) +  # 调整标签位置
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text = element_text(size = 10),  # 调整两个坐标轴的文本大小
+        axis.ticks = element_line(size = 0.5),  # 调整坐标轴刻度的粗细
+        panel.grid.major = element_blank(),  # 移除主要网格线
+        panel.grid.minor = element_blank(),  # 移除次要网格线
+        axis.line = element_line(color = "black", size = 0.5),  # 线条细化
+        panel.border = element_blank(),  # 移除面板边框
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +  # 移除面板背景
+  labs(x = "", y = "Enrichment
+(log2OR)", title = "HD vs Pre-HSCT") +  # 更改坐标轴和标题的标签为中文
+  scale_fill_identity() 
+```
+
+##CD8tex
+```{r}
+CD8Tex <- Tcell[,Tcell@meta.data$Celltype %in% c('CD8 Tex')]
+CD8Tex <- NormalizeData(CD8Tex) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+CD8Tex <- RunPCA(CD8Tex, verbose = F)
+CD8Tex <- RunHarmony(CD8Tex,group.by = "orig.ident")
+CD8Tex <- CD8Tex %>% RunUMAP(dims=1:20,reduction = "harmony")
+CD8Tex <- FindNeighbors(CD8Tex, dims=1:20,reduction = "harmony")
+CD8Tex <- FindClusters(CD8Tex,resolution = 0.3)
+DimPlot(CD8Tex,label = T)
+CD8Tex.markers <- FindAllMarkers(CD8Tex, only.pos = TRUE, min.pct = 0.25, logfc.threshscRNA = 0.25)
+write.csv(CD8Tex.markers,file = "./11月富集/CD8Tex.markers.csv")
+DotPlot(CD8Tex,features = c('IL7R','TCF7','CCR7','FOS',
+  'GZMB','NKG7','GNLY','GZMH',
+  'PDCD1','TOX','TIGIT','HAVCR2',
+  'MKI67','CCNA2','MCM7','TOP2A','CD69','CD300A'),group.by = 'Celltype',cols = c('#A7A3B2','#2F0B95'))+coord_flip()+
+  theme(axis.text.y = element_text(size = 10))+
+  theme(axis.text.x = element_text(size=10,angle=60,vjust = 0.9,hjust = 0.9),
+        legend.title= element_text(size = 10))#
+```
+
+```{r}
+cluster_names <- c("0" = "EX_prog2","1" = "EX_inter","2" = "EX_inter","3" = "EX_termi","4" = "EX_prog1","5" = "EX_prog1","6" = "EX_prog2")
+CD8Tex$Celltype <- cluster_names[CD8Tex$seurat_clusters]
+```
+
+##CD4Na
+```{r}
+CD4Na <- Tcell[,Tcell@meta.data$Celltype %in% c('CD8 Naive')]
+CD4Na <- NormalizeData(CD4Na) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+CD4Na <- RunPCA(CD4Na, verbose = F)
+CD4Na <- RunHarmony(CD4Na,group.by = "orig.ident")
+CD4Na <- CD4Na %>% RunUMAP(dims=1:20,reduction = "harmony")
+CD4Na <- FindNeighbors(CD4Na, dims=1:20,reduction = "harmony")
+CD4Na <- FindClusters(CD4Na,resolution = 0.3)
+DimPlot(CD4Na,label = T)
+
+cluster_names <- c("0" = "C1","1" = "C2","2" = "C3")
+CD4Na$Celltype <- cluster_names[CD4Na$seurat_clusters]
+```
+
+
+##CD4Teff
+```{r}
+CD4Teff <- Tcell[,Tcell@meta.data$Celltype %in% c('CD4 Teff')]
+DefaultAssay(CD4Teff) <- 'RNA'
+CD4Teff <- NormalizeData(CD4Teff) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+CD4Teff <- RunPCA(CD4Teff, verbose = F)
+CD4Teff <- RunHarmony(CD4Teff,group.by = "orig.ident")
+CD4Teff <- CD4Teff %>% RunUMAP(dims=1:20,reduction = "harmony")
+CD4Teff <- FindNeighbors(CD4Teff, dims=1:20,reduction = "harmony")
+CD4Teff <- FindClusters(CD4Teff,resolution = 0.3)
+DimPlot(CD4Teff,label = T)
+DotPlot(CD4Teff,features = c('CD3E','CD4','CD8A','SELL','TCF7','LEF1','IL7R','CCR7','CD28','FAS',
+'PRF1','GNLY','GZMK','GZMH','FOXP3','IKZF2',
+'CD69','LAG3','TOX','TIGIT','CTLA4','PDCD1','MKI67','ITGAE',
+'NCAM1',"FCGR3A","KLRC2",'SLC4A10',
+'TRAV1-2','TRDC','TRDV2','TRGV9'),cols = c('#A7A3B2','#2F0B95'))+coord_flip()+
+  theme(axis.text.y = element_text(size = 10))+
+  theme(axis.text.x = element_text(size=10,angle=60,vjust = 0.9,hjust = 0.9),
+        legend.title= element_text(size = 10))#group.by = 'Celltype',
+
+CD4Teff.markers <- FindAllMarkers(CD4Teff, only.pos = TRUE, min.pct = 0.25, logfc.threshscRNA = 0.25)
+write.csv(CD4Teff.markers,file = "./11月富集/CD4Teff.markers.csv")
+
+Idents(CD4Teff) <- 'condition1'#HD HSCT-0 HSCT-1 HSCT-3 HSCT-6 
+CD4Teff6M <- FindMarkers(CD4Teff,ident.1=c("HD"),
+                              ident.2=c("HSCT-6"),
+                              logfc.threshold= 0.25,min.pct = 0.25)#为负表示ident2上调
+write.csv(CD4Teff6M,file = "./10月富集/CD4Teff6MTF.csv")
+#绘图
+features=c("STAT1","IRF1","CD74","KLF3", "TNFAIP3","HLA-DRB1","HLA-DPA1","HLA-DPB1","HLA-DRA", "HLA-DRB5","HLA-DQA1","HLA-A","HLA-G","HIST1H1E","HIST1H1D","HIST1H1C")
+
+features=c( "CIITA","STAT1","IRF1","STAT2","IRF9","KLF1","KLF3","KLF11",
+            "NFE2", "CEBPE", "RFXANK")
+#改名
+Tcell$Celltype1 <- Tcell$Celltype
+Tcell@meta.data$Celltype1 <- as.character(Tcell@meta.data$Celltype1)
+Tcell@meta.data$Celltype1[Tcell@meta.data$Celltype1 %in% c("CD4 Teff1", "CD4 Teff2")] <- "CD4 Teff"
+Tcell@meta.data$Celltype1[Tcell@meta.data$Celltype1 %in% c("CD8 Teff1", "CD8 Teff2")] <- "CD8 Teff"
+Tcell@meta.data$Celltype1[Tcell@meta.data$Celltype1 %in% c("CD8 Tem1", "CD8 Tem2")] <- "CD8 Tem"
+Tcell1 <- Tcell[,!Tcell$orig.ident %in% c('GZ9','YZ9','YZ9')]
+```
+
+##Teff
+```{r}
+Teff <- Tcell[,Tcell@meta.data$Celltype %in% c('γδT')]
+
+```
+
+##Tcell TF
+```{r}
+library(Seurat)
+library(decoupleR)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(patchwork)
+library(ggplot2)
+library(pheatmap)
+library(dorothea)
+library(OmnipathR)
+library(dplyr)
+```
+
+```{r}
+net <- get_progeny(organism = 'human', top = 500)
+```
+
+```{r}
+mat <- as.matrix(Tcell@assays$RNA@data)
+acts <- run_mlm(mat=mat, net=net, .source='source', .target='target',
+                .mor='weight', minsize = 5)
+acts
+```
+
+```{r}
+#转录因子活性
+net <- decoupleR::get_collectri(organism='human', split_complexes=FALSE)
+mat <- as.matrix(Tcell@assays$RNA@data)
+net2 <- subset(net, !is.na(source) & !is.na(target))
+acts <- run_ulm(mat=mat, net=net2, .source='source', .target='target',
+                .mor='mor', minsize = 5)
+write.csv(net2,'TFnet.csv')
+```
+
+```{r}
+Tcell[['TF']] <- acts %>%
+  pivot_wider(id_cols = 'source', names_from = 'condition',
+              values_from = 'score') %>%
+  column_to_rownames('source') %>%
+  Seurat::CreateAssayObject(.)
+
+# Change assay
+DefaultAssay(object = Tcell) <- "TF"
+
+# Scale the data
+Tcell <- ScaleData(Tcell)
+Tcell@assays$TF@data <- Tcell@assays$TF@scale.data
+```
+
+```{r}
+DotPlot(Tcell,features = c("FOXP1","LEF1","ERG","GBX2","TRERF1","MLX","BRD4","TCF7","SOX9","DLX2",
+                           "SIX4","KLF9","NFX1","SATB2","MZF1","NOTCH1","KLF2","MYBL1","KLF3","TCF4",
+                           "MAZ","RFXANK","RFXAP","RFX5","EHF","ATF3","REL","CIITA","IRF1","IRF7",
+                           "IRF5","KLF13","TEAD1","SPI1","IRF8","VSX2","IRF3","NFKBIB","MEF2C","RFX1",
+                           "JUND","CEBPD","ATF2","JUN","JUNB","TBX21","STAT2","HIVEP1","RELA","IRF2","STAT1"))+coord_flip()
+```
+
+
+##整合Mist
+```{r}
+data <- read.csv("obs_data.csv")
+#data$X <- sub("_.*", "", data$X)
+#data$X <- paste(data$batch, data$X, sep = "_")
+write.csv(data, file = "obs_data.csv", row.names = FALSE)
+
+matched_barcodes <- match(rownames(Tcell@meta.data), data$X)
+matched_data_column <- data$joint_cluster[matched_barcodes]
+Tcell@meta.data$joint_cluster <- matched_data_column
+matched_data_column <- data$gex_cluster[matched_barcodes]
+Tcell@meta.data$gex_cluster <- matched_data_column
+```
+
+##Mon
+```{r}
+Mon <- Mon[!grepl("^HBB|^HBA|^MT-|^RPS|^RPL|^MTRNR|^S100A", rownames(Mon)), ]
+Mon <- NormalizeData(Mon) %>% FindVariableFeatures(nfeatures = 2000) %>% ScaleData()
+Mon <- RunPCA(Mon, verbose = F)
+Mon <- RunHarmony(Mon,group.by.vars = "orig.ident")
+ElbowPlot(Mon, ndims = 50)
+pct <- Mon[["pca"]]@stdev / sum(Mon[["pca"]]@stdev) * 100
+cumu <- cumsum(pct)
+co1 <- which(cumu > 90 & pct < 5)[1]
+co1
+co2 <- sort(which((pct[1:length(pct) - 1] - pct[2:length(pct)]) > 0.1), decreasing = T)[1] + 1
+co2
+pcs <- min(co1, co2)
+pcs
+plot_df <- data.frame(pct = pct,
+                      cumu = cumu,
+                      rank = 1:length(pct))
+ggplot(plot_df, aes(cumu, pct, label = rank, color = rank > pcs)) +
+  geom_text() +
+  geom_vline(xintercept = 90, color = "grey") +
+  geom_hline(yintercept = min(pct[pct > 5]), color = "grey") +
+  theme_bw()
+rm(pct,co1,co2,pcs,plot_df,cumu)
+```
+
+```{r}
+Mon <- Mon %>% RunUMAP(dims=1:20,reduction = "harmony")
+Mon <- FindNeighbors(Mon, dims=1:20,reduction = "harmony")
+DimPlot(Mon,raster = F,label = T)#group.by = 'Celltype'
+
+Mon1 <- FindClusters(Mon, resolution = c(seq(.5,2,.1)))
+clustree(Mon1@meta.data, prefix = "RNA_snn_res.")
+Mon <- FindClusters(Mon,resolution = 1.0)
+DimPlot(Mon,label = T)
+```
+
+```{r}
+Mmon <- FindAllMarkers(Mon, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+write.csv(Mmon,file = "./11月富集/Mmon.csv")
+```
+
+
+```{r}
+#T细胞命名
+cluster_names <- c("0" = "CMon","1" = "CMon","2" = "CMon", "3" = "NCMon","4" ="CMon",
+                   "5" ="CMon","6" =  "CMon","7" ="IMon","8" ="CMon",
+                   "9" = "CMon","10" = "CMon","11" = "CMon",
+                   "12" = "CMon","13" = "NCMon","14" = "Mac","15" = "CMon")
+Mon$Celltype <- cluster_names[Mon$seurat_clusters]
+Mon$Celltype <- factor(Mon$Celltype, levels = c("CMon",'IMon',"NCMon","Mac"), ordered = TRUE)
+
+# 根据细胞群分类设置不同的条件
+Mon$condition1[which(Mon$orig.ident %in% c("GZ5", "GZ6", "GZ7", "GZ8", "GZ9"))] <- "HD"
+Mon$condition1[which(Mon$orig.ident %in% c("YZ6", "YZ7", "YZ8", "YZ9", "YZ5"))] <- "Pre"
+Mon$condition1[which(Mon$orig.ident %in% c("YZ6A", "YZ7A", "YZ8A", "YZ9A", "YZ5A"))] <- "1M"
+Mon$condition1[which(Mon$orig.ident %in% c("YZ6C", "YZ7C", "YZ8C", "YZ5C"))] <- "3M"
+Mon$condition1[which(Mon$orig.ident %in% c("YZ6D", "YZ7D", "YZ8D", "YZ5D"))] <- "6M"
+Mon$condition1 <- factor(Mon$condition1, levels = c("HD",'Pre',"1M","3M",'6M'), ordered = TRUE)
+
+Tcell1$Celltype2 <- paste(Tcell1$condition2, Tcell1$Celltype, sep = "_")
+Tcell1$Celltype2 <- factor(Tcell1$Celltype2, levels = c())
+```
+
+```{r}
+DimPlot(Mon,cols = c('#D97DAA','#F4A99B','#D97DAA','#D97DAA'))
+```
+

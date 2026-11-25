@@ -1,0 +1,34 @@
+palette_id	order	label	hex	value
+Celltype	1	CD8 NV	#DFC4DE	
+Celltype	2	CD8 hobit	#b092b2	
+Celltype	3	CD8 mem. 1	#d475a8	
+Celltype	4	CD8 mem. 2	#a8c5db	
+Celltype	5	CD8 mem. 3	#7eb5d6	
+Celltype	6	CD8 eff. 1	#569ecf	
+Celltype	7	CD8 eff. 2	#3d7ab8	
+Celltype	8	CD8 IFN	#6b429e	
+Celltype	9	CD4 NV	#e38888	
+Celltype	10	CD4 mem.	#e36442	
+Celltype	11	Th17	#d9382b	
+Celltype	12	Treg	#a81c1c	
+Celltype	13	CD4 IFN	#7a1122	
+Celltype	14	γδT	#8b52a3	
+Celltype	15	MAIT	#5c2d82	
+Celltype	16	MLP	#1f8a8a	
+Celltype	17	MEP	#229eab	
+Celltype	18	NP	#3bc4be	
+Celltype	19	MDP	#42b883	
+Celltype	20	pDCs	#7bc993	
+Celltype	21	cDCs	#4db86e	
+Celltype	22	preB	#2e9e52	
+Celltype	23	pro/pre T	#1b7d3a	
+Celltype	24	MP/mono	#115c27	
+Group	1	CR	#3B6C80	
+Group	2	REL	#B36350	
+Expression	1	Low	#326A82	-2
+Expression	2	Centre	#FBF9F4	0
+Expression	3	High	#B52635	2
+Joint_state	1	Double positive	#75538F	
+Joint_state	2	FGFBP2 only	#B34855	
+Joint_state	3	ADGRG1 only	#C7A34C	
+Joint_state	4	Neither detected	#D9DEDF	

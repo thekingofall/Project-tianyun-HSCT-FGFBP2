@@ -1,0 +1,12 @@
+{
+ "source":"/data5/tiany/GSE222633/GSE222633_seurat_RNA_TCR_harmony_v20261026.rds",
+ "subset":"celltype_broad == CD8 T; retain all 53538 selected cells and all source RNA/ADT/HTO assays and TCR metadata",
+ "normalization":"RNA LogNormalize, scale factor10000; vst3000 variable genes, excluding mitochondrial, ribosomal, variable receptor and selected sex-linked nuisance genes; ScaleData",
+ "reduction":"PCA50; Harmony on pair_id, first30 PCs, max20 iterations; UMAP on30 Harmony dimensions, n_neighbors30, min_dist0.3",
+ "clustering":"Louvain algorithm1, resolution0.5, CD8 SNN; random seed222633",
+ "markers":"Seurat FindAllMarkers, Wilcoxon/limma implementation, only.posTRUE, min.pct0.1, logfc.threshold0.25; balanced subsampling max1500 cells per comparison group for marker testing; original full-cell cluster expression summaries retained",
+ "annotation":"canonical lineage/state markers, complete cluster markers, UCell programs, ADT phenotype and TCR support; use Naive/Tcm/Tem/Teff nomenclature with supported finer states; no forced S2/S3 or Tex label",
+ "target_RDS":"/data5/tiany/GSE222633/FCD8.rds",
+ "target_markers":"/data5/tiany/GSE222633/CD8diff.csv",
+ "existing_file_policy":"source immutable; targets were absent at audit; final creation requires absent target; no previous file deletion, overwrite or movement"
+}

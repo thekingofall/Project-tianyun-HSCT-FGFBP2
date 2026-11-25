@@ -1,0 +1,9 @@
+Package: SoupX
+Version: 1.6.2
+Depends: R (>= 3.5.0)
+Imports: ggplot2, Matrix, methods, Seurat (>= 3.2.2)
+Suggests: knitr, rstan, DropletUtils, rmarkdown, formatR
+License: GPL-2
+MD5sum: 3abad9e262d9e2e6245f1cf1b2058fe0
+NeedsCompilation: no
+Published: 2022-11-01 14:00:03 UTC

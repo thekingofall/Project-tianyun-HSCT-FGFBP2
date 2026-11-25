@@ -1,0 +1,150 @@
+sample	Pair	participant_id	role	timepoint	Celltype	cells
+D10postPBMC	A	D10	Donor	Post_GCSF	CD8 Teff	526
+D10postPBMC	A	D10	Donor	Post_GCSF	MAIT-like T	203
+D10postPBMC	A	D10	Donor	Post_GCSF	CD8 Naive	458
+D10postPBMC	A	D10	Donor	Post_GCSF	CD8 Tem	224
+D10postPBMC	A	D10	Donor	Post_GCSF	CD8 Cycling	30
+D10postPBMC	A	D10	Donor	Post_GCSF	gdT-like T	381
+D10postPBMC	A	D10	Donor	Post_GCSF	CD4-like T (review)	60
+D10postPBMC	A	D10	Donor	Post_GCSF	CD8 T (low RNA)	82
+D10postPBMC	A	D10	Donor	Post_GCSF	NK/T-like (review)	19
+D10prePBMC	A	D10	Donor	Pre_GCSF	CD4-like T (review)	143
+D10prePBMC	A	D10	Donor	Pre_GCSF	CD8 Naive	486
+D10prePBMC	A	D10	Donor	Pre_GCSF	MAIT-like T	309
+D10prePBMC	A	D10	Donor	Pre_GCSF	CD8 Tem	396
+D10prePBMC	A	D10	Donor	Pre_GCSF	gdT-like T	168
+D10prePBMC	A	D10	Donor	Pre_GCSF	CD8 T (low RNA)	88
+D10prePBMC	A	D10	Donor	Pre_GCSF	CD8 Teff	390
+D10prePBMC	A	D10	Donor	Pre_GCSF	CD8 Cycling	20
+D10prePBMC	A	D10	Donor	Pre_GCSF	NK/T-like (review)	10
+D16postPBMC	B	D16	Donor	Post_GCSF	CD8 Teff	1227
+D16postPBMC	B	D16	Donor	Post_GCSF	gdT-like T	297
+D16postPBMC	B	D16	Donor	Post_GCSF	CD8 T (low RNA)	404
+D16postPBMC	B	D16	Donor	Post_GCSF	CD8 Naive	529
+D16postPBMC	B	D16	Donor	Post_GCSF	CD8 Tem	406
+D16postPBMC	B	D16	Donor	Post_GCSF	MAIT-like T	573
+D16postPBMC	B	D16	Donor	Post_GCSF	NK/T-like (review)	36
+D16postPBMC	B	D16	Donor	Post_GCSF	CD8 Cycling	25
+D16postPBMC	B	D16	Donor	Post_GCSF	CD4-like T (review)	4
+D16prePBMC	B	D16	Donor	Pre_GCSF	CD8 Teff	471
+D16prePBMC	B	D16	Donor	Pre_GCSF	gdT-like T	401
+D16prePBMC	B	D16	Donor	Pre_GCSF	CD8 T (low RNA)	59
+D16prePBMC	B	D16	Donor	Pre_GCSF	MAIT-like T	448
+D16prePBMC	B	D16	Donor	Pre_GCSF	CD8 Tem	139
+D16prePBMC	B	D16	Donor	Pre_GCSF	CD8 Naive	207
+D16prePBMC	B	D16	Donor	Pre_GCSF	CD8 Cycling	11
+D16prePBMC	B	D16	Donor	Pre_GCSF	NK/T-like (review)	21
+D26postPBMC	C	D26	Donor	Post_GCSF	CD8 Teff	612
+D26postPBMC	C	D26	Donor	Post_GCSF	MAIT-like T	74
+D26postPBMC	C	D26	Donor	Post_GCSF	CD8 Naive	315
+D26postPBMC	C	D26	Donor	Post_GCSF	CD8 Tem	302
+D26postPBMC	C	D26	Donor	Post_GCSF	CD8 Cycling	37
+D26postPBMC	C	D26	Donor	Post_GCSF	gdT-like T	120
+D26postPBMC	C	D26	Donor	Post_GCSF	CD8 T (low RNA)	41
+D26postPBMC	C	D26	Donor	Post_GCSF	NK/T-like (review)	55
+D26postPBMC	C	D26	Donor	Post_GCSF	CD4-like T (review)	17
+D26prePBMC	C	D26	Donor	Pre_GCSF	gdT-like T	69
+D26prePBMC	C	D26	Donor	Pre_GCSF	CD8 Teff	578
+D26prePBMC	C	D26	Donor	Pre_GCSF	CD8 Tem	444
+D26prePBMC	C	D26	Donor	Pre_GCSF	CD8 Naive	173
+D26prePBMC	C	D26	Donor	Pre_GCSF	MAIT-like T	366
+D26prePBMC	C	D26	Donor	Pre_GCSF	NK/T-like (review)	49
+D26prePBMC	C	D26	Donor	Pre_GCSF	CD4-like T (review)	12
+D26prePBMC	C	D26	Donor	Pre_GCSF	CD8 Cycling	29
+D26prePBMC	C	D26	Donor	Pre_GCSF	CD8 T (low RNA)	54
+D29postPBMC	D	D29	Donor	Post_GCSF	CD8 Teff	594
+D29postPBMC	D	D29	Donor	Post_GCSF	CD8 T (low RNA)	148
+D29postPBMC	D	D29	Donor	Post_GCSF	CD8 Tem	602
+D29postPBMC	D	D29	Donor	Post_GCSF	CD8 Naive	217
+D29postPBMC	D	D29	Donor	Post_GCSF	MAIT-like T	128
+D29postPBMC	D	D29	Donor	Post_GCSF	CD4-like T (review)	7
+D29postPBMC	D	D29	Donor	Post_GCSF	CD8 Cycling	5
+D29postPBMC	D	D29	Donor	Post_GCSF	NK/T-like (review)	9
+D29postPBMC	D	D29	Donor	Post_GCSF	gdT-like T	14
+D36postPBMC	E	D36	Donor	Post_GCSF	CD8 Teff	617
+D36postPBMC	E	D36	Donor	Post_GCSF	CD8 Naive	96
+D36postPBMC	E	D36	Donor	Post_GCSF	CD8 Tem	86
+D36postPBMC	E	D36	Donor	Post_GCSF	CD8 Activated	24
+D36postPBMC	E	D36	Donor	Post_GCSF	NK/T-like (review)	23
+D36postPBMC	E	D36	Donor	Post_GCSF	CD8 T (low RNA)	5
+D36postPBMC	E	D36	Donor	Post_GCSF	CD8 Cycling	5
+D36postPBMC	E	D36	Donor	Post_GCSF	MAIT-like T	89
+D36postPBMC	E	D36	Donor	Post_GCSF	gdT-like T	60
+D36prePBMC	E	D36	Donor	Pre_GCSF	CD8 T (low RNA)	2086
+D36prePBMC	E	D36	Donor	Pre_GCSF	CD8 Teff	1896
+D36prePBMC	E	D36	Donor	Pre_GCSF	CD8 Naive	574
+D36prePBMC	E	D36	Donor	Pre_GCSF	MAIT-like T	1122
+D36prePBMC	E	D36	Donor	Pre_GCSF	CD8 Tem	651
+D36prePBMC	E	D36	Donor	Pre_GCSF	CD8 Cycling	31
+D36prePBMC	E	D36	Donor	Pre_GCSF	gdT-like T	207
+D36prePBMC	E	D36	Donor	Pre_GCSF	NK/T-like (review)	98
+D36prePBMC	E	D36	Donor	Pre_GCSF	CD8 Activated	65
+R10d180PBMC	A	R10	Recipient	D180	CD8 Teff	3483
+R10d180PBMC	A	R10	Recipient	D180	CD8 Tem	463
+R10d180PBMC	A	R10	Recipient	D180	CD8 Naive	180
+R10d180PBMC	A	R10	Recipient	D180	CD8 T (low RNA)	230
+R10d180PBMC	A	R10	Recipient	D180	CD8 Cycling	107
+R10d180PBMC	A	R10	Recipient	D180	gdT-like T	124
+R10d180PBMC	A	R10	Recipient	D180	CD4-like T (review)	9
+R10d180PBMC	A	R10	Recipient	D180	MAIT-like T	69
+R10d180PBMC	A	R10	Recipient	D180	NK/T-like (review)	7
+R16d180PBMC	B	R16	Recipient	D180	CD8 Teff	989
+R16d180PBMC	B	R16	Recipient	D180	CD8 Tem	3718
+R16d180PBMC	B	R16	Recipient	D180	CD8 T (low RNA)	866
+R16d180PBMC	B	R16	Recipient	D180	gdT-like T	34
+R16d180PBMC	B	R16	Recipient	D180	CD8 Cycling	22
+R16d180PBMC	B	R16	Recipient	D180	MAIT-like T	12
+R16d180PBMC	B	R16	Recipient	D180	CD8 Naive	10
+R16d180PBMC	B	R16	Recipient	D180	CD4-like T (review)	2
+R16d180PBMC	B	R16	Recipient	D180	NK/T-like (review)	4
+R16d90PBMC	B	R16	Recipient	D90	CD8 T (low RNA)	513
+R16d90PBMC	B	R16	Recipient	D90	CD8 Teff	4432
+R16d90PBMC	B	R16	Recipient	D90	CD8 Tem	15
+R16d90PBMC	B	R16	Recipient	D90	CD8 Cycling	306
+R16d90PBMC	B	R16	Recipient	D90	gdT-like T	101
+R16d90PBMC	B	R16	Recipient	D90	NK/T-like (review)	9
+R16d90PBMC	B	R16	Recipient	D90	CD8 Naive	30
+R16d90PBMC	B	R16	Recipient	D90	MAIT-like T	9
+R16d90PBMC	B	R16	Recipient	D90	CD4-like T (review)	1
+R26d180PBMC	C	R26	Recipient	D180	gdT-like T	796
+R26d180PBMC	C	R26	Recipient	D180	CD8 T (low RNA)	297
+R26d180PBMC	C	R26	Recipient	D180	CD8 Teff	4344
+R26d180PBMC	C	R26	Recipient	D180	MAIT-like T	88
+R26d180PBMC	C	R26	Recipient	D180	CD8 Tem	488
+R26d180PBMC	C	R26	Recipient	D180	NK/T-like (review)	41
+R26d180PBMC	C	R26	Recipient	D180	CD8 Cycling	61
+R26d180PBMC	C	R26	Recipient	D180	CD4-like T (review)	3
+R26d180PBMC	C	R26	Recipient	D180	CD8 Naive	3
+R26d90PBMC	C	R26	Recipient	D90	CD8 Teff	1672
+R26d90PBMC	C	R26	Recipient	D90	CD8 Tem	1345
+R26d90PBMC	C	R26	Recipient	D90	CD8 T (low RNA)	884
+R26d90PBMC	C	R26	Recipient	D90	CD8 Cycling	73
+R26d90PBMC	C	R26	Recipient	D90	MAIT-like T	225
+R26d90PBMC	C	R26	Recipient	D90	gdT-like T	21
+R26d90PBMC	C	R26	Recipient	D90	NK/T-like (review)	22
+R26d90PBMC	C	R26	Recipient	D90	CD4-like T (review)	6
+R26d90PBMC	C	R26	Recipient	D90	CD8 Naive	1
+R29d180PBMC	D	R29	Recipient	D180	gdT-like T	191
+R29d180PBMC	D	R29	Recipient	D180	CD8 Teff	2404
+R29d180PBMC	D	R29	Recipient	D180	CD8 T (low RNA)	320
+R29d180PBMC	D	R29	Recipient	D180	CD8 Cycling	87
+R29d180PBMC	D	R29	Recipient	D180	MAIT-like T	56
+R29d180PBMC	D	R29	Recipient	D180	NK/T-like (review)	108
+R29d180PBMC	D	R29	Recipient	D180	CD8 Naive	15
+R29d180PBMC	D	R29	Recipient	D180	CD8 Tem	8
+R29d180PBMC	D	R29	Recipient	D180	CD4-like T (review)	1
+R29d90PBMC	D	R29	Recipient	D90	CD8 Teff	122
+R29d90PBMC	D	R29	Recipient	D90	MAIT-like T	392
+R29d90PBMC	D	R29	Recipient	D90	CD8 Tem	164
+R29d90PBMC	D	R29	Recipient	D90	NK/T-like (review)	6
+R29d90PBMC	D	R29	Recipient	D90	gdT-like T	14
+R29d90PBMC	D	R29	Recipient	D90	CD8 Naive	3
+R29d90PBMC	D	R29	Recipient	D90	CD8 Cycling	11
+R29d90PBMC	D	R29	Recipient	D90	CD8 T (low RNA)	46
+R36d90PBMC	E	R36	Recipient	D90	CD8 Teff	1141
+R36d90PBMC	E	R36	Recipient	D90	CD8 Tem	118
+R36d90PBMC	E	R36	Recipient	D90	gdT-like T	69
+R36d90PBMC	E	R36	Recipient	D90	CD8 Cycling	38
+R36d90PBMC	E	R36	Recipient	D90	NK/T-like (review)	18
+R36d90PBMC	E	R36	Recipient	D90	CD8 T (low RNA)	26
+R36d90PBMC	E	R36	Recipient	D90	MAIT-like T	8

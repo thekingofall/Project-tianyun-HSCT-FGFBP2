@@ -1,0 +1,24 @@
+cluster	Celltype	Celltype_fine	confidence	review	lineage	evidence
+0	CD8 Teff	CD8 Teff_HLA-DRA	High	FALSE	Conventional CD8 T	CD3D CD8A CD8B; CCL5 GZMH FGFBP2; HLA-DRA CD74 activation; strong alpha-beta TCR support
+1	CD8 Tem	CD8 Tem_GZMK	Moderate	FALSE	Conventional CD8 T	GZMK IL7R; CCR7-low antigen-experienced cytotoxic memory; overlaps effector programs
+2	CD8 T (low RNA)	CD8 T_lowRNA	Low	TRUE	CD8-selected T, state unresolved	Median 521 genes and 792 RNA counts; weak RNA/TCR detection; CD3/CD8 ADT supports T lineage; retain state uncertainty
+3	CD8 Teff	CD8 Teff_NEAT1	Moderate	FALSE	Conventional CD8 T	CCL5 GZMH FGFBP2 GNLY with NEAT1/SYNE2-rich expression; lower RNA/TCR detection
+4_0	MAIT-like T	MAIT-like_GZMK	Moderate	FALSE	MAIT-like T	KLRB1 GZMK IL7R TRAV1-2; invariant MAIT TRA support in 22 percent of all cells
+4_1	MAIT-like T	MAIT-like_SLC4A10	High	FALSE	MAIT-like T	SLC4A10 KLRB1 ZBTB16 TRAV1-2; invariant MAIT TRA support in 38 percent of all cells
+4_2	gdT-like T	gdT-like_GZMK	High	FALSE	Gamma-delta-like T	TRDV2 TRGV9 TRDC TRGC1 transcription; GZMK IL7R; low alpha-beta pairing; RNA-defined lineage
+4_3	CD8 Teff	CD8 Teff_FOS	Moderate	FALSE	Conventional CD8 T	CD3D CD8A/B; CCL5 FGFBP2 GZMH; FOS JUN DUSP1 immediate-early program
+5	CD8 Teff	CD8 Teff_GNLY	High	FALSE	Conventional CD8 T	GNLY GZMB GZMH FCGR3A with CD3/CD8 RNA and ADT plus alpha-beta TCR support
+6_0	gdT-like T	gdT-like_cytotoxic	Moderate	TRUE	Gamma-delta-like or mixed cytotoxic T	TRGV9 TRDV2 TRDC with cytotoxic genes; alpha-beta receptors in a subset; retain mixed-lineage review flag
+6_1	gdT-like T	gdT-like_TRDV2	High	FALSE	Gamma-delta-like T	TRGV9 TRDV2 TRDC high RNA detection with CD3 support; RNA-defined lineage, gamma-delta paired calls not recovered
+6_2	CD8 Teff	CD8 Teff_ZNF683	Moderate	FALSE	Conventional CD8 T	ZNF683 GNLY GZMB; CD3/CD8 expression and alpha-beta pairing; Hobit-associated cytotoxic phenotype
+6_3	NK/T-like (review)	NK-T-like_FCER1G	Low	TRUE	NK/T unresolved	FCER1G TYROBP GNLY; weak CD3/CD8 protein and alpha-beta TCR; TRDC signal requires mixed-lineage review
+6_4	CD8 Teff	CD8 Teff_cytotoxic_rare	Moderate	TRUE	Conventional CD8 T	Only 18 cells; CD3D GZMB PRF1 FGFBP2 and strong alpha-beta pairing; rare clonotype-rich subcluster
+7_0	CD8 Naive	CD8 Naive_TCF7	High	FALSE	Conventional CD8 T	CCR7 SELL TCF7 LEF1 MAL; low effector genes; CD8 ADT and alpha-beta TCR support
+7_1	CD8 Naive	CD8 Naive_TCF7	High	FALSE	Conventional CD8 T	CCR7 SELL TCF7 LEF1 MAL strongly concordant; low cytotoxicity
+7_2	CD8 Naive	CD8 Naive_FOS	High	FALSE	Conventional CD8 T	Naive CCR7 TCF7 LEF1 with FOS JUN immediate-early program
+8	CD8 Tem	CD8 Tem_NR4A2	Moderate	FALSE	Conventional CD8 T	GZMK IL7R plus NR4A2 CREM DUSP2 activation; overlapping effector-memory phenotype
+9	CD8 Teff	CD8 Teff_GZMH	High	FALSE	Conventional CD8 T	CD3D CD8A/B CCL5 GZMH FGFBP2; cytotoxic effector phenotype
+10	MAIT-like T	MAIT-like_IL7R	Moderate	FALSE	MAIT-like T	IL7R CXCR6 CCR6 TRAV1-2 SLC4A10; invariant MAIT TRA support in 19 percent of all cells
+11	CD8 Cycling	CD8 Cycling_MKI67	High	FALSE	Conventional CD8 T	MKI67 TOP2A STMN1 TYMS MCM genes plus CD3/CD8 and cytotoxicity
+12	CD4-like T (review)	CD4-like_Naive_review	Low	TRUE	CD4-like T, review source CD8 label	TCF7 CCR7 naive T program; weak CD8 RNA/protein and higher CD4 protein in donor A samples
+13	CD8 Activated	CD8 Activated_NFKB1	Moderate	TRUE	CD8-selected activated T	NFKB1 BIRC3 NR4A2 response; CD8 protein high; only 89 cells in pair E; no sufficient multi-checkpoint evidence for Tex

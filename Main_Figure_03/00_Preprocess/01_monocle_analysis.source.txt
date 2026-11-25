@@ -1,0 +1,340 @@
+library(BiocGenerics)
+library(DelayedArray)
+library(DelayedMatrixStats)
+library(limma)
+library(lme4)
+library(S4Vectors)
+library(SingleCellExperiment)
+library(SummarizedExperiment)
+library(batchelor)
+library(HDF5Array)
+library(terra)
+library(ggrastr)
+library(monocle)
+library(cowplot)
+
+#提取
+Mye <- scRNA[,scRNA@meta.data$Celltype %in% c("HSC/MPP","GMP","MEP","CD14 Mono","CD16 Mono","cDC","pDC","Early Ery")]
+#
+Idents(scRNA) <- 'Celltype'
+scRNA$Celltype=factor(scRNA$Celltype,level=unique(scRNA$Celltype))
+scRNA$Celltype1 <- scRNA$Celltype
+scRNA$Celltype1 <- ifelse(scRNA$prediction == "malignant", paste0(scRNA$Celltype, "-like"), paste0(scRNA$Celltype, ""))
+table(scRNA$Celltype1)
+scRNA$Celltype1 <- factor(Mye$Celltype1, levels = c("HSC/MPP","HSC/MPP-like",
+        "GMP","GMP-like","MEP","MEP-like","CD14 Mono","CD14 Mono-like","CD16 Mono","CD16 Mono-like",
+        "cDC","cDC-like","pDC","pDC-like","Early Ery","Early Ery-like"), ordered = TRUE)
+Idents(Pre) <- 'Celltype'
+Con <- Mal[,Mal@meta.data$type %in% c("HSC/MPP-like","GMP-like","Mono-like","DC-like")]
+Con <- Mal[,Mal@meta.data$type %in% c("HSC/MPP-like","GMP-like","Mono-like","DC-like")]
+
+Con <- scRNA1[,scRNA1@meta.data$Celltype %in% c('C1','C2','C4','C7')]
+Con <- CD8
+DefaultAssay(Con) <- "RNA"
+#Tcell$seurat_clusters=factor(Tcell$seurat_clusters,level=unique(Tcell$seurat_clusters))
+# 重来------------------------
+#data基因表达矩阵（行为基因，列为细胞）
+#pd（注释细胞，通常包括分群信息）
+#fd（注释基因，存在一列gene_short_name，注释基因名，行为矩阵中对应的基因）
+data <- as(as.matrix(Con@assays$RNA@scale.data), 'sparseMatrix')
+pd <- new('AnnotatedDataFrame', data = Con@meta.data)
+fData <- data.frame(gene_short_name = row.names(data), row.names = row.names(data))
+fd <- new('AnnotatedDataFrame', data = fData)
+cds <- newCellDataSet(data,
+                      phenoData = pd,
+                      featureData = fd,
+                      lowerDetectionLimit = 0.5,
+                      expressionFamily = negbinomial.size())
+#expressionFamily需要根据数据特点进行相应选择，原始UMI.count选择negbinomial.size()择negbinomial()，推荐使用这种方法
+#前者计算速度快，后者运行准确；tobit()适用于截断正态分布，如FPKM、TPM这些相对表达量数据，monocle处理会先取log
+#gaussianff()处理高斯分布，通常是log后的FPKM、TPM，不推荐使用
+#质控
+cds<-detectGenes(cds,min_expr = 0.1)#过滤掉表达量小于0.1的基因
+expressed_gene<-row.names(subset(fData(cds),num_cells_expressed >=10))#每个基因在超过10个的细胞中保留
+#cds文件预处理
+cds <- estimateSizeFactors(cds)
+cds <- estimateDispersions(cds)#相当于找高变基因Seurat::FindVariableFeatures()
+#寻找生物学过程相关的基因
+diff_test_res<-differentialGeneTest(cds[expressed_gene,],
+                                    fullModelFormulaStr = "~condition2" )#根据seurat_clusters进行半监督式学习
+#根据qval筛选ordering gene，进行下游拟时序排序
+ordering_genes <- row.names(subset(diff_test_res, qval < 0.01))
+length(ordering_genes)
+# 指定决定命运的基因------------------------
+#方法一：指定基因
+#ordering_genes <- c()
+#方法二：monocle高变基因,这些基因参与细胞命运决定，原定步骤
+disp_table <- dispersionTable(cds)#相当于找高变基因Seurat::FindVariableFeatures()
+unsup_clustering_genes <- subset(disp_table,mean_expression>=0.1)
+length(unsup_clustering_genes$gene_id)
+#Ordering的基因ID列表，我们就需要将它们设置在cds对象中
+cds <- setOrderingFilter(cds, ordering_genes)#标记相关基因
+plot_ordering_genes(cds)
+#plot_pc_variance_explained(cds, return_all = F) #据此选择后续的num_dim，耗时
+#方法三：直接用cluster间差异表达基因
+#data.markers <- FindAllMarkers(data, only.pos = TRUE,min.pct = 0.25,logfc.threshold = 1)
+#data.markers <- data.markers[data.markers$p_val_adj<0.05,]
+#cds <- setOrderingFilter(cds, data.markers$gene) #标记相关基因
+
+# 降维------------------------
+library(BiocGenerics)
+#下面这一步比较容易报错，降维
+cds <- reduceDimension(cds, 
+                       max_components = 2,
+                       num_dim = 7,
+                       reduction_method = 'DDRTree',
+                       verbose = F)
+#去除样本影响，和上一步骤类似可运行可不运行
+#cds1 <- reduceDimension(cds,max_components = 2,num_dim = 6, reduction_method = 'DDRTree', residualModelFormulaStr = "~condition",verbose = F)
+#下面这一步比较容易报错，尤其是高版本的R环境，解决方法见文末
+cds <- orderCells(cds)#拟时序过程 
+#saveRDS(cds,'cds(CD8-345).rds')
+#cds1 <- orderCells(cds1)
+#展示
+plot_cell_trajectory(cds, color_by="Celltype",show_branch_points = F,cell_size = 0.8)#+color_mapping#cluster轨迹推断，color_by核心参数
+plot_cell_trajectory(cds, color_by="State",show_branch_points = T,cell_size = 0.8)#模拟时间顺序，可以将时间
+plot_cell_trajectory(cds, color_by="Pseudotime",show_branch_points = F,cell_size = 0.8)
+plot_cell_trajectory(cds, color_by="prediction",show_branch_points = F,cell_size = 0.1)#Pseudotime拟时序进程
+plot_cell_trajectory(cds, color_by="condition1",show_branch_points = F,cell_size = 0.1)
+legend_text <- c()
+plot_cell_trajectory(cds, color_by = "tc", legend.text = cluster.order, legend.direction = "vertical")
+#拟时间可能会与实际生物学方向相反，可以将顺序翻转
+
+cds <- orderCells(cds,reverse = T)
+cds <- orderCells(cds,root_state = 5)
+
+#如果觉得混在一起看不清楚，进行分面
+color_mapping <- scale_color_manual(values = c('HC' = '#4DAF4A',
+                                               'CR' = '#377EB8',
+                                               'NR' = '#E41A1C',
+                                               'AM_4' = '#99DAEE',
+                                               'IM_1' = '#E4E7A2',
+                                               'IM_2' = '#999999',
+                                               'IM_3' = '#0099CC',
+                                               'IM_4' = '#336666',
+                                               'recMacs_1' = '#993333',
+                                               'recMacs_2' = '#FF6666'))
+
+color_mapping <- scale_color_manual(values = c("HSC/MPP1" = '#E41A1C',
+                                               "HSC/MPP2" = "#ADB304",
+                                               "HSC/MPP3" = '#4DAF4A'))
+
+color_mapping <- scale_color_manual(values = c("HD" = '#4DAF4A',
+                                               "Pre" = "#ADB304",
+                                               "Post" = '#E41A1C'))
+
+color_mapping <- scale_color_manual(values = c("CD8 Naive" = "#CDB4D8",
+                                               "CD8 Tcm" = '#EC8EC8',
+                                               "CD8 Tem" = "#764B88",
+                                               'CD8 Teff'="#A0478D",
+                                               'CD8 Tex'="#F7B7A3"))
+
+color_mapping <- scale_color_manual(values = c("HSC/MPP" = '#6E0E66',
+           "GMP" = '#9A6FAF',"DC" ='#C3BC6C',"Mono" = '#9999C9'))
+plot_cell_trajectory(cds,color_by = "Pseudotime",show_branch_points = F,cell_size = 1)+
+  facet_wrap(~condition,nrow = 2)
++color_mapping
+c('#6E0E66','#9A6FAF','#F05998','#7C7896','#DFC4DE','#D9A7CC','#EB8ABA',
+  '#9999C9','#C3BC6C','#B1C07A','#7CBC8A','#008C84','#1B91D1'))
+
+plot_cell_trajectory(cds,color_by = "seurat_clusters",show_branch_points = F,cell_size = 0.8)+
+  facet_wrap(~seurat_clusters,nrow = 2)#+color_mapping
+plot_cell_trajectory(cds,color_by = "condition",show_branch_points = F,cell_size = 0.8)+
+  facet_wrap(~condition,nrow = 2)#+color_mapping
+plot_cell_trajectory(cds1,color_by = "Pseudotime",show_branch_points = F,cell_size = 0.8)+
+  facet_wrap(~State,nrow =2)
+#基因表达变化图黑白
+blast_genes <- diff_test_res$gene_short_name[1:10]
+plot_genes_jitter(cds[blast_genes,],
+                  grouping = "Pseudotime",
+                  min_expr = 0.1)#看某些基因的拟合曲线，图不是很推荐
+#基因表达变化图彩色
+mycds_expressed_gene <- row.names(subset(fData(cds),
+                                         num_cells_expressed >=10))#取子集，将表达量大于一定程度的取出
+mycds_filtered <- cds[mycds_expressed_gene,]#过滤
+
+my_genes <- row.names(subset(fData(mycds_filtered),
+                             gene_short_name %in% c("JUN")))
+cds_subset <- mycds_filtered[my_genes,]
+plot_genes_in_pseudotime(cds_subset, color_by = "Celltype")
+cds_subset <- mycds_filtered[c("GZMA"),]#挑选部分基因
+plot_genes_in_pseudotime(cds_subset,color_by="Celltype",ncol =2 )+
+  facet_wrap(~Celltype,nrow = 1)+color_mapping#加入拟合曲线，看某个基因变化趋势
+plot_genes_in_pseudotime(cds_subset,color_by="condition2",ncol = 3)+color_mapping
+#看在拟时序中的表达情况
+colnames(pData(cds))
+pData(cds)$JUN = log2(exprs(cds)['JUN',]+1)
+plot_cell_trajectory(cds, color_by = "JUN")  + scale_color_gsea()
+pData(cds)$S100A8 = log2(exprs(cds)['S100A8',]+1)
+p2=plot_cell_trajectory(cds, color_by = "S100A8")    + scale_color_gsea()
+library(patchwork)
+
+#BEAM热图
+BEAM_res <- BEAM(cds, branch_point = 1, cores = 8)
+BEAM_res <- BEAM_res[order(BEAM_res$qval),]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
+p2 <- plot_genes_branched_heatmap(cds[row.names(subset(BEAM_res,qval < 1e-4)),],
+                            branch_point = 1,
+                            num_clusters = 4,
+                            cores = 1,return_heatmap = T,
+                            use_gene_short_name = T,
+                            show_rownames = T)
+features=c(  
+  "ENO1","CD34","PROM1","SPINK2","NPM1",  "CDK6", "CD164",
+  "CD38","CD9","CD82","TOX","C1QTNF4",
+  "CLEC11A","FAM30A", "PRSS57",
+  "EGFL7","LDHA","LDHB","EEF1A1","EEF1B2","HSF1",
+  "IGFBP7","APEX1","UBA7",
+  
+  "S100A12", "S100A8", "S100A9","S100A6","S100P","CD36","CTSD","FCN1",
+  "SLC25A37", "BLVRB","PLBD1",
+  "VCAN", "RETN","ALOX5AP", "MNDA", "RGS2",
+  "PLAUR", "PADI4", "HMGB2", "FPR1", "HIST1H4C", "NCF1", "CXCL8", 
+  "ITGAM"
+)#"CLIC1","CD300A","HLA-DPA1","HLA-DPB1","NRROS","ACADVL",
+features=c("JUN","TBX21","TEAD1","SPI1","ATF3","IRF1","MEF2C","JUND","CEBPD","STAT1",
+           "FOXP1","LEF1","TCF7","ERG","RUNX2")#"HIST1H4C",
+
+BEAM <- BEAM_res[features,]
+my_palette <- colorRampPalette(c('#008080', 'white', '#CD5C5C'))(58)
+p1 <- plot_genes_branched_heatmap(cds[row.names(subset(BEAM,qval < 1e-4)),],
+                            branch_point = 1,
+                            num_clusters = 3,
+                            cores = 8,
+                            return_heatmap = F,
+                            hmcols = my_palette,
+                            use_gene_short_name = T,
+                            show_rownames = T,cluster_rows = FALSE)
+
+plot_genes_branched_heatmap(cds[row.names(subset(BEAM_res,qval < 1e-4))[1:100],],
+                            branch_point = 1,
+                            num_clusters = 3,
+                            cores = 8,
+                            use_gene_short_name = T,
+                            show_rownames = T)
+
+p=plot_genes_branched_heatmap(cds[row.names(subset(BEAM_res,qval < 1e-4)),],
+                            branch_point = 1,
+                            num_clusters = 4,
+                            cores = 8,
+                            return_heatmap=T,
+                            use_gene_short_name = T,
+                            show_rownames = T)
+#显示前100个基因
+p=plot_genes_branched_heatmap(cds[row.names(subset(BEAM_res,qval < 1e-4))[1:200],],
+                              branch_point = 1,
+                              num_clusters = 4,
+                              cores = 8,
+                              return_heatmap=T,
+                              use_gene_short_name = T,
+                              show_rownames = T)#取前100个
+
+
+
+#设定基因进行筛选
+selected_genes <- intersect(marker, row.names(subset(BEAM_res, qval < 1e-4)))
+plot_genes_branched_heatmap(cds[selected_genes,],
+                            branch_point = 1,
+                            num_clusters = 4,
+                            cores = 8,
+                            use_gene_short_name = TRUE,
+                            show_rownames = TRUE)
+
+p$ph_res$tree_row
+clusters <- cutree(p$ph_res$tree_row, k = 4)
+clustering <- data.frame(clusters)
+clustering[,1] <- as.character(clustering[,1])
+colnames(clustering) <- "Gene_Clusters"
+table(clustering)
+write.csv(clustering,file="branch.csv")
+
+cds_genes <- row.names(subset(fData(cds),
+                               gene_short_name %in% c("CD82","IL1RAP","ITGA5","CD9","FCGR2A")))
+plot_genes_branched_pseudotime(cds[cds_genes,],
+                               branch_point = 1,
+                               color_by = "State",
+                               ncol = 2)
+plot_genes_in_pseudotime(cds[cds_genes,],
+                               branch_point = 1,
+                               color_by = "condition",
+                               ncol = 1)
+saveRDS(cds,'./cds/Maccds.rds')
+cds1 <- cds
+
+#
+marker <- c("Kcnip4", "Chil3","Lepr","Lpl","Htr2c","Plet1","Krt79","Ear1","Nav2","Wwtr1",
+            "Adgre4", "Dusp16", "Pou2f2", "Pecam1", "Rap1gap2", "Pglyrp1", "Ace", "Spn", "Setbp1", "Treml4",
+            "Ccl6", "Fn1", "Spp1", "Wfdc21", "Olr1", "Mmp19", "Atp6v0d2", "Adipor2","Slc7a2",
+            "Skap1", "Ccl5", "Itk", "Gm2682", "Tox", "Rora", "Grap2", "Il18r1", "Trbc2", "Icos",
+            "Gpnmb", "Inhba", "Fabp5", "Pdpn", "Apoe", "Ctsd", "Mmp14", "Ctss","Fmnl2",
+            "C1qa", "C1qb", "C1qc", "Rbpj", "H2-Eb1", "Vcam1", "H2-Aa", "Selenop", "Ccl12", "Pf4",
+            "Scgb1a1", "Gm26917", "Mir6236", "mt-Rnr2", "Mkrn1","mt-Rnr1", "Lars2", "Gsn", "Cdk8","Sptbn1",
+            "Scd1", "Igkc", "Slpi", "Wfdc2", "Ighm","Saa3", "Cbr2", "Itga6", "Bank1", "Flnb",
+            "Plac8", "Ly6c2", "Ccr2", "Ifi27l2a", "S100a4", "Ifitm3", "Ms4a4c", "S100a6", "Ifitm6", "Stxbp6",
+            "S100a9", "S100a8", "Lcn2", "Retnlg", "Il1r2", "Hdc", "G0s2", "Ifitm1", "Acod1", "Ccl3")
+
+
+
+marker <- c("Gpnmb", "Saa3", "Inhba", "Fabp5", "Pdpn", "Apoe", "Spp1", "Ctsd", 
+            "Mmp14", "Ctss", "Fmnl2", "Fth1", "Trem2", "Il7r", "Ctsl", "Clmp",
+            "Cd63", "Kcnip4", "Chil3", "Lepr", "Htr2c", "Lpl", "Plet1", "Krt79", 
+            "Ear1", "Nav2", "Fabp1", "Ccl6", "Fn1","Wfdc21", "Olr1",
+            "Mmp19", "Adgre4", "Dusp16", "Pou2f2", "Pecam1", "Rap1gap2", "Pglyrp1", 
+            "Ace", "Spn")
+
+plot_pseudotime_heatmap(cds[marker,],
+                        num_clusters = 4,
+                        cores = 8,
+                        show_rownames = T,cluster_rows = c(2,4,3,1))
+#时序密度图
+data<- data.frame(Pseudotime = cds$Pseudotime, condition = cds$condition2)
+ggplot(data, aes(x = Pseudotime, fill = condition)) +
+  geom_density(alpha = 0.7,color = '#939292') +
+  labs(title = "Density Plot", x = "Pseudotime", y = "Density") +
+  theme_minimal()+
+theme(panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.title.x = element_text(size = 10, face = "bold"),
+      axis.title.y = element_text(size = 10, face = "bold"),
+      axis.line = element_line(color = "black", size = 0.5),
+      axis.ticks = element_line(color = "black"), axis.text.x = element_text(size = 10),
+      axis.text.y = element_text(size = 10))+
+  scale_fill_manual(values = c('#51A3B8','#BBC258','red'),labels = c("HD",'Pre',"Post"))+
+  guides(fill = guide_legend(title = ""))#不显示legend title
+#密度图上方
+ggplot(data, aes(x = condition, y = Pseudotime, fill = condition)) +
+  geom_boxplot(alpha = 0.7) +
+  theme_minimal() +
+  coord_flip() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_fill_manual(values = c('#51A3B8','#BBC258'))#'#619CD9', '#E38D8C'
+# 执行t检验
+t_test_result <- t.test(Pseudotime ~ Condition, data = data)
+
+#某基因时序密度图
+p$data$Celltype2 <- factor(p$Celltype2, levels = c("HSC/MPP","GMP","Mono","DC"), ordered = TRUE)
+data<- data.frame(Pseudotime = p$data$Pseudotim, condition = p$data$Celltype2,
+                  facet = p$data$condition)
+#data$facet <- factor(data$facet, levels = c("Normal", "Malignant"))
+ggplot(data, aes(x = Pseudotime, fill = condition)) +
+  geom_density(alpha = 0.7,color = '#939292') +
+  facet_wrap(~facet, scales = "fixed")+
+  labs(title = "ENO1 Expression Level", x = "Pseudotime", y = "Density") +
+  theme_minimal()+
+  theme(plot.title = element_text(hjust = 0.5),
+    panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title.x = element_text(size = 10, face = "bold",colour ="black"),
+        axis.title.y = element_text(size = 10, face = "bold"),
+        axis.line = element_line(color = "black", size = 0.5),
+        axis.ticks = element_line(color = "black"),
+    axis.text.y = element_text(size = 10),
+        axis.text.x = element_text(size = 10))+
+  scale_fill_manual(values = c('#6E0E66','#9A6FAF','#9999C9','#C3BC6C'),
+                    labels = c("HSC/MPP","GMP","DC","Monocyte"))+
+  guides(fill = guide_legend(title = ""))#不显示legend title
+
+
+
+

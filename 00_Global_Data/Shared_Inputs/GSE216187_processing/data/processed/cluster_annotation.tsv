@@ -1,0 +1,28 @@
+cluster	celltype_broad	evidence
+0	CD4 T	CD3D/TRAC and CD4/IL7R; CD8 markers low
+1	CD8 T	CD3D/TRAC with CD8A or CD8B
+2	CD8 T	CD3D/TRAC with CD8A or CD8B
+3	CD8 T	CD3D/TRAC with CD8A or CD8B
+4	CD8 T	CD3D/TRAC with CD8A or CD8B
+5	CD4 T	CD3D/TRAC and CD4/IL7R; CD8 markers low
+6	Gamma-delta T	CD3D with high TRDC/TRGC1
+7	CD8 T	CD3D/TRAC with CD8A or CD8B
+8	MAIT	CD3D/TRAC with KLRB1/SLC4A10
+9	CD4 T	CD3D/TRAC and CD4/IL7R; CD8 markers low
+10	MAIT	CD3D/TRAC with KLRB1/SLC4A10
+11	CD8 T	CD3D/TRAC with CD8A or CD8B
+12	CD8 T	CD3D/TRAC with CD8A or CD8B
+13	Myeloid	MPO/CTSG or LYZ; T markers low
+14	CD8 T	CD3D/TRAC with CD8A or CD8B
+15	CD8 T	CD3D/TRAC with CD8A or CD8B
+16	CD8 T	CD3D/TRAC with CD8A or CD8B
+17	CD8 T	CD3D/TRAC with CD8A or CD8B
+18	CD4 T	CD3D/TRAC and CD4/IL7R; CD8 markers low
+19	Progenitors	CD34/GATA2/SPINK2 or DNTT/VPREB1/CD79A; T markers low
+20	Progenitors	CD34/GATA2/SPINK2 or DNTT/VPREB1/CD79A; T markers low
+21	Progenitors	CD34/GATA2/SPINK2 or DNTT/VPREB1/CD79A; T markers low
+22	T cells	CD3D/TRAC; CD4/CD8 subtype not forced
+23	MAIT	CD3D/TRAC with KLRB1/SLC4A10
+24	Progenitors	CD34/GATA2/SPINK2 or DNTT/VPREB1/CD79A; T markers low
+25	CD8 T	CD3D/TRAC with CD8A or CD8B
+26	Myeloid	MPO/CTSG or LYZ; T markers low
